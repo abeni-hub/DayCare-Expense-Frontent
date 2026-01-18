@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  TrendingDown,
+  // TrendingDown,
   TrendingUp,
   AlertTriangle,
   DollarSign,
@@ -11,6 +11,7 @@ import { useData } from '../context/DataContext';
 import { ExpenseChart } from './ExpenseChart';
 import { CategoryChart } from './CategoryChart';
 import { PaymentSourceChart } from './PaymentSourceChart';
+import { useGetPostsQuery } from '../apis/api';
 
 export function Dashboard() {
   const {
@@ -59,11 +60,15 @@ export function Dashboard() {
   const cashExpenses = getTotalExpensesBySource('cash');
   const bankExpenses = getTotalExpensesBySource('bank');
   const bothExpenses = getTotalExpensesBySource('both');
-
+  console.log("here");
+  const {data:expenseres, isError,isLoading} = useGetPostsQuery();
+  console.log("data",expenseres);
+  console.log("isError",isError);
+  console.log("isLoading",isLoading);
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Overview {isLoading}</h1>
         <p className="text-gray-600">
           Welcome back! Here's your daycare financial summary for{' '}
           {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.

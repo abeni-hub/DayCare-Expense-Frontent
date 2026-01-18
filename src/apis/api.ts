@@ -1,29 +1,52 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-interface Getexp {
-    count:number;
-    next?:string;
-    prev?:string;
-    results:{
-        id:number;
-        items:{
-            id:string;
-            name:string;
-            description:string;
-            file_url:string;
-            uploaded_at:string;
-        }[]
-    }[];
+// Item inside an expense
+export interface ExpenseItem {
+  id: number;
+  item_name: string;
+  quantity: string;
+  unit: string;
+  unit_price: string;
+  total: string;
 }
+
+// Single expense record
+export interface Expense {
+  id: number;
+  items: ExpenseItem[];
+  date: string; // ISO date (YYYY-MM-DD)
+  description: string;
+  category: string;
+  supplier: string;
+  payment_source: string;
+  vat_enabled: boolean;
+  vat_rate: string;
+  vat_amount: string;
+  total_expense: string;
+  remarks: string;
+  created_at: string; // ISO datetime
+}
+
+// API paginated response
+export interface ExpenseResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Expense[];
+}
+
 
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://jsonplaceholder.typicode.com/",
+    baseUrl: "http://127.0.0.1:8000/api",
   }),
   endpoints: (builder) => ({
-    getPosts: builder.query<Getexp, an>({
-      query: () => "posts",
+    getPosts: builder.query<ExpenseResponse,void>({
+      query: () => ({
+        url: '/expenses/',
+        method: 'GET',
+      }),
     }),
     createpost :builder.mutation({
       query: (newPost) => ({
@@ -36,4 +59,4 @@ export const api = createApi({
 
 });
 
-export const { useGetPostsQuery } = api;
+export const { useGetPostsQuery,useCreatepostMutation } = api;
