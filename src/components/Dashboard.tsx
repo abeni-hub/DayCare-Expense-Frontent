@@ -11,7 +11,7 @@ import { useData } from '../context/DataContext';
 import { ExpenseChart } from './ExpenseChart';
 import { CategoryChart } from './CategoryChart';
 import { PaymentSourceChart } from './PaymentSourceChart';
-import { useGetPostsQuery } from '../apis/api';
+import { useGetPostsQuery } from '../apis/axios';
 
 export function Dashboard() {
   const {
