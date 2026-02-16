@@ -1,8 +1,4 @@
 import { useState } from "react";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { DataProvider } from "./context/DataContext";
-
-import Login from "./auth/Login";
 
 import Layout from "./shared/Layout";
 
@@ -11,13 +7,8 @@ import AccountsPage from "./features/accounts/AccountsPage";
 import ExpensesPage from "./features/expenses/ExpensesPage";
 import IncomesPage from "./features/Incomes/IncomesPage";
 
-function AppContent() {
-  const { isAuthenticated } = useAuth();
+function App() {
   const [currentView, setCurrentView] = useState("dashboard");
-
-  if (!isAuthenticated) {
-    return <Login />;
-  }
 
   const renderView = () => {
     switch (currentView) {
@@ -42,16 +33,6 @@ function AppContent() {
     <Layout currentView={currentView} onViewChange={setCurrentView}>
       {renderView()}
     </Layout>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <DataProvider>
-        <AppContent />
-      </DataProvider>
-    </AuthProvider>
   );
 }
 
