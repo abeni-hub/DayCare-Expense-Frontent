@@ -5,7 +5,7 @@ import Layout from "./shared/Layout";
 import DashboardPage from "./features/dashboard/DashboardPage";
 import AccountsPage from "./features/accounts/AccountsPage";
 import ExpensesPage from "./features/expenses/ExpensesPage";
-import IncomesPage from "./features/Incomes/IncomesPage";
+import IncomesPage from "./features/incomes/IncomesPage"; // ✅ fixed lowercase
 
 function App() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -21,7 +21,7 @@ function App() {
       case "expenses":
         return <ExpensesPage />;
 
-      case "income":
+      case "incomes":   // ✅ use plural for consistency
         return <IncomesPage />;
 
       default:
@@ -30,7 +30,10 @@ function App() {
   };
 
   return (
-    <Layout currentView={currentView} onViewChange={setCurrentView}>
+    <Layout
+      currentView={currentView}
+      onViewChange={setCurrentView}
+    >
       {renderView()}
     </Layout>
   );

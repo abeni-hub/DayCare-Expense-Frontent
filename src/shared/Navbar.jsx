@@ -1,30 +1,37 @@
+import { useState } from "react";
+
 function Navbar({ currentView, onViewChange }) {
-  const buttonStyle = (view) => ({
-    marginRight: "10px",
-    padding: "8px 12px",
-    backgroundColor: currentView === view ? "#333" : "#ccc",
-    color: currentView === view ? "#fff" : "#000",
-    border: "none",
-    cursor: "pointer",
-  });
+  const menuItem = (view, label) => (
+    <div
+      onClick={() => onViewChange(view)}
+      style={{
+        padding: "12px 20px",
+        cursor: "pointer",
+        backgroundColor: currentView === view ? "#1e293b" : "transparent",
+        color: currentView === view ? "#fff" : "#cbd5e1",
+        marginBottom: "5px",
+        borderRadius: "6px",
+      }}
+    >
+      {label}
+    </div>
+  );
 
   return (
-    <div style={{ padding: "15px", background: "#f5f5f5" }}>
-      <button style={buttonStyle("dashboard")} onClick={() => onViewChange("dashboard")}>
-        Dashboard
-      </button>
+    <div
+      style={{
+        width: "240px",
+        backgroundColor: "#0f172a",
+        padding: "20px",
+        color: "#fff",
+      }}
+    >
+      <h2 style={{ marginBottom: "30px" }}>Daycare Finance</h2>
 
-      <button style={buttonStyle("accounts")} onClick={() => onViewChange("accounts")}>
-        Accounts
-      </button>
-
-      <button style={buttonStyle("expenses")} onClick={() => onViewChange("expenses")}>
-        Expenses
-      </button>
-
-      <button style={buttonStyle("income")} onClick={() => onViewChange("income")}>
-        Income
-      </button>
+      {menuItem("dashboard", "Dashboard")}
+      {menuItem("accounts", "Accounts")}
+      {menuItem("expenses", "Expenses")}
+      {menuItem("incomes", "Income")}
     </div>
   );
 }
