@@ -1,20 +1,6 @@
 import AccountSummary from "./AccountSummary";
 
-function AccountsPage() {
-  // Temporary static data (later from API)
-  const accounts = [
-    {
-      id: 1,
-      name: "Cash Account",
-      balance: 12500,
-    },
-    {
-      id: 2,
-      name: "Bank Account",
-      balance: 45800,
-    },
-  ];
-
+function AccountsPage({ accounts }) {
   return (
     <div>
       <h1 style={{ marginBottom: "30px" }}>Accounts Overview</h1>
