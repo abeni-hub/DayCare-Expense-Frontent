@@ -1,7 +1,7 @@
 function ExpenseList({
   expenses,
   onDeleteExpense,
-  onEditExpense,
+  onEditClick,
 }) {
   if (expenses.length === 0) {
     return <p>No expenses added yet.</p>;
@@ -31,12 +31,7 @@ function ExpenseList({
             <strong>- ETB {expense.amount}</strong>
 
             <button
-              onClick={() =>
-                onEditExpense({
-                  ...expense,
-                  amount: expense.amount + 100, // demo edit
-                })
-              }
+              onClick={() => onEditClick(expense)}
               style={{ marginLeft: 10 }}
             >
               Edit

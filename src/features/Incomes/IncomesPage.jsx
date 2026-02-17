@@ -1,3 +1,4 @@
+import { useState } from "react";
 import IncomeForm from "./IncomeForm";
 import IncomeList from "./IncomeList";
 
@@ -7,16 +8,32 @@ function IncomesPage({
   onDeleteIncome,
   onEditIncome,
 }) {
+  const [editingIncome, setEditingIncome] =
+    useState(null);
+
+  const handleSubmit = (income) => {
+    if (editingIncome) {
+      onEditIncome(income);
+      setEditingIncome(null);
+    } else {
+      onAddIncome(income);
+    }
+  };
+
   return (
     <div>
       <h1 style={{ marginBottom: "25px" }}>Income</h1>
 
-      <IncomeForm onAddIncome={onAddIncome} />
+      <IncomeForm
+        onSubmit={handleSubmit}
+        editingIncome={editingIncome}
+        clearEdit={() => setEditingIncome(null)}
+      />
 
       <IncomeList
         incomes={incomes}
         onDeleteIncome={onDeleteIncome}
-        onEditIncome={onEditIncome}
+        onEditClick={setEditingIncome}
       />
     </div>
   );

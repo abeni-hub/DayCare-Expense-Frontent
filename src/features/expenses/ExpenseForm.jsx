@@ -1,86 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-function ExpenseForm({ onAddExpense }) {
+function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [account, setAccount] = useState("Cash");
+
+  useEffect(() => {
+    if (editingExpense) {
+      setTitle(editingExpense.title);
+      setAmount(editingExpense.amount);
+      setAccount(editingExpense.account);
+    }
+  }, [editingExpense]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!title || !amount) return;
 
-    const newExpense = {
-      id: Date.now(),
+    const expense = {
+      id: editingExpense ? editingExpense.id : Date.now(),
       title,
       amount: Number(amount),
       account,
       date: new Date().toLocaleDateString(),
     };
 
-    onAddExpense(newExpense);
+    onSubmit(expense);
 
     setTitle("");
     setAmount("");
+    setAccount("Cash");
   };
 
   return (
     <form
       onSubmit={handleSubmit}
       style={{
-        backgroundColor: "#fff",
-        padding: "20px",
-        borderRadius: "8px",
-        marginBottom: "25px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+        background: "#fff",
+        padding: 20,
+        marginBottom: 25,
       }}
     >
-      <h3 style={{ marginBottom: "15px" }}>Add Expense</h3>
+      <h3>
+        {editingExpense ? "Edit Expense" : "Add Expense"}
+      </h3>
 
-      <div style={{ marginBottom: "10px" }}>
-        <input
-          type="text"
-          placeholder="Expense Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={{ padding: "8px", width: "100%" }}
-        />
-      </div>
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Title"
+        style={{ width: "100%", marginBottom: 10 }}
+      />
 
-      <div style={{ marginBottom: "10px" }}>
-        <input
-          type="number"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{ padding: "8px", width: "100%" }}
-        />
-      </div>
+      <input
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        placeholder="Amount"
+        style={{ width: "100%", marginBottom: 10 }}
+      />
 
-      <div style={{ marginBottom: "15px" }}>
-        <select
-          value={account}
-          onChange={(e) => setAccount(e.target.value)}
-          style={{ padding: "8px", width: "100%" }}
-        >
-          <option value="Cash">Cash</option>
-          <option value="Bank">Bank</option>
-        </select>
-      </div>
-
-      <button
-        type="submit"
-        style={{
-          padding: "10px 15px",
-          backgroundColor: "#dc2626",
-          color: "#fff",
-          border: "none",
-          cursor: "pointer",
-          borderRadius: "5px",
-        }}
+      <select
+        value={account}
+        onChange={(e) => setAccount(e.target.value)}
+        style={{ width: "100%", marginBottom: 10 }}
       >
-        Add Expense
+        <option value="Cash">Cash</option>
+        <option value="Bank">Bank</option>
+      </select>
+
+      <button type="submit">
+        {editingExpense ? "Update Expense" : "Add Expense"}
       </button>
+
+      {editingExpense && (
+        <button
+          type="button"
+          onClick={clearEdit}
+          style={{ marginLeft: 10 }}
+        >
+          Cancel
+        </button>
+      )}
     </form>
   );
 }
