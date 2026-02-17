@@ -10,24 +10,35 @@ import IncomesPage from "./features/incomes/IncomesPage";
 function App() {
   const [currentView, setCurrentView] = useState("dashboard");
 
-  // 🔹 Global Accounts State
   const [accounts, setAccounts] = useState([
     { id: 1, name: "Cash", balance: 12500 },
     { id: 2, name: "Bank", balance: 45800 },
   ]);
 
-  // 🔹 Global Expenses State
   const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
 
+  // 🔴 Expense Logic
   const addExpense = (expense) => {
-    // Add expense to history
     setExpenses((prev) => [...prev, expense]);
 
-    // Deduct from correct account
-    setAccounts((prevAccounts) =>
-      prevAccounts.map((acc) =>
+    setAccounts((prev) =>
+      prev.map((acc) =>
         acc.name === expense.account
           ? { ...acc, balance: acc.balance - expense.amount }
+          : acc
+      )
+    );
+  };
+
+  // 🟢 Income Logic
+  const addIncome = (income) => {
+    setIncomes((prev) => [...prev, income]);
+
+    setAccounts((prev) =>
+      prev.map((acc) =>
+        acc.name === income.account
+          ? { ...acc, balance: acc.balance + income.amount }
           : acc
       )
     );
@@ -36,7 +47,13 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case "dashboard":
-        return <DashboardPage accounts={accounts} />;
+        return (
+          <DashboardPage
+            accounts={accounts}
+            expenses={expenses}
+            incomes={incomes}
+          />
+        );
 
       case "accounts":
         return <AccountsPage accounts={accounts} />;
@@ -50,7 +67,12 @@ function App() {
         );
 
       case "incomes":
-        return <IncomesPage />;
+        return (
+          <IncomesPage
+            incomes={incomes}
+            onAddIncome={addIncome}
+          />
+        );
 
       default:
         return <DashboardPage accounts={accounts} />;
