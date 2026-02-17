@@ -1,9 +1,26 @@
 import AccountSummary from "./AccountSummary";
 
-function AccountsPage({ accounts }) {
+function AccountsPage({ accounts = [] }) {
+  if (!accounts || accounts.length === 0) {
+    return <p>No accounts available.</p>;
+  }
+
+  const combinedBalance = accounts.reduce(
+    (sum, acc) => sum + acc.balance,
+    0
+  );
+
+  const combinedAccount = {
+    id: "combined",
+    name: "Combined Account",
+    balance: combinedBalance,
+  };
+
   return (
     <div>
-      <h1 style={{ marginBottom: "30px" }}>Accounts Overview</h1>
+      <h1 style={{ marginBottom: "30px" }}>
+        Accounts Overview
+      </h1>
 
       <div
         style={{
@@ -12,8 +29,15 @@ function AccountsPage({ accounts }) {
           flexWrap: "wrap",
         }}
       >
+        {/* Combined Account */}
+        <AccountSummary account={combinedAccount} />
+
+        {/* Individual Accounts */}
         {accounts.map((account) => (
-          <AccountSummary key={account.id} account={account} />
+          <AccountSummary
+            key={account.id}
+            account={account}
+          />
         ))}
       </div>
     </div>
