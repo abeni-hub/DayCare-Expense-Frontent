@@ -1,18 +1,15 @@
-function ExpenseList({ expenses }) {
+function ExpenseList({
+  expenses,
+  onDeleteExpense,
+  onEditExpense,
+}) {
   if (expenses.length === 0) {
     return <p>No expenses added yet.</p>;
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: "#fff",
-        padding: "20px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-      }}
-    >
-      <h3 style={{ marginBottom: "15px" }}>Expense History</h3>
+    <div style={{ background: "#fff", padding: 20 }}>
+      <h3>Expense History</h3>
 
       {expenses.map((expense) => (
         <div
@@ -20,19 +17,39 @@ function ExpenseList({ expenses }) {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            borderBottom: "1px solid #eee",
-            padding: "8px 0",
+            marginBottom: 10,
           }}
         >
           <div>
             <strong>{expense.title}</strong>
-            <div style={{ fontSize: "12px", color: "#555" }}>
+            <div>
               {expense.account} • {expense.date}
             </div>
           </div>
 
-          <div style={{ color: "#dc2626", fontWeight: "bold" }}>
-            - ETB {expense.amount.toLocaleString()}
+          <div>
+            <strong>- ETB {expense.amount}</strong>
+
+            <button
+              onClick={() =>
+                onEditExpense({
+                  ...expense,
+                  amount: expense.amount + 100, // demo edit
+                })
+              }
+              style={{ marginLeft: 10 }}
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() =>
+                onDeleteExpense(expense.id)
+              }
+              style={{ marginLeft: 10 }}
+            >
+              Delete
+            </button>
           </div>
         </div>
       ))}

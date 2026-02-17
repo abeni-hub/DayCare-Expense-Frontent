@@ -1,18 +1,15 @@
-function IncomeList({ incomes }) {
+function IncomeList({
+  incomes,
+  onDeleteIncome,
+  onEditIncome,
+}) {
   if (incomes.length === 0) {
     return <p>No income added yet.</p>;
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: "#fff",
-        padding: "20px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-      }}
-    >
-      <h3 style={{ marginBottom: "15px" }}>Income History</h3>
+    <div style={{ background: "#fff", padding: 20 }}>
+      <h3>Income History</h3>
 
       {incomes.map((income) => (
         <div
@@ -20,19 +17,39 @@ function IncomeList({ incomes }) {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            borderBottom: "1px solid #eee",
-            padding: "8px 0",
+            marginBottom: 10,
           }}
         >
           <div>
             <strong>{income.title}</strong>
-            <div style={{ fontSize: "12px", color: "#555" }}>
+            <div>
               {income.account} • {income.date}
             </div>
           </div>
 
-          <div style={{ color: "#16a34a", fontWeight: "bold" }}>
-            + ETB {income.amount.toLocaleString()}
+          <div>
+            <strong>+ ETB {income.amount}</strong>
+
+            <button
+              onClick={() =>
+                onEditIncome({
+                  ...income,
+                  amount: income.amount + 100,
+                })
+              }
+              style={{ marginLeft: 10 }}
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() =>
+                onDeleteIncome(income.id)
+              }
+              style={{ marginLeft: 10 }}
+            >
+              Delete
+            </button>
           </div>
         </div>
       ))}
