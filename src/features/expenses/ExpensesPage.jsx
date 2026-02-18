@@ -2,37 +2,47 @@ import { useState } from "react";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
 
-function ExpensesPage({
-  expenses,
-  onAddExpense,
-  onDeleteExpense,
-  onEditExpense,
-}) {
+function ExpensesPage({ expenses, onAddExpense, onDeleteExpense, onEditExpense }) {
   const [editingExpense, setEditingExpense] = useState(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleSubmit = (expense) => {
     if (editingExpense) {
       onEditExpense(expense);
-      setEditingExpense(null);
     } else {
       onAddExpense(expense);
     }
+    setEditingExpense(null);
+    setIsAdding(false);
   };
 
   return (
-    <div>
-      <h1 style={{ marginBottom: "25px" }}>Expenses</h1>
+    <div style={{ padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <h2>Expenses</h2>
+        <button
+            onClick={() => setIsAdding(true)}
+            style={{ background: '#007bff', color: '#fff', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+        >
+          + Add Expense
+        </button>
+      </div>
 
-      <ExpenseForm
-        onSubmit={handleSubmit}
-        editingExpense={editingExpense}
-        clearEdit={() => setEditingExpense(null)}
-      />
+      {(isAdding || editingExpense) && (
+        <ExpenseForm
+          onSubmit={handleSubmit}
+          editingExpense={editingExpense}
+          clearEdit={() => {
+            setEditingExpense(null);
+            setIsAdding(false);
+          }}
+        />
+      )}
 
       <ExpenseList
         expenses={expenses}
         onDeleteExpense={onDeleteExpense}
-        onEditClick={setEditingExpense}
+        onEditClick={(exp) => setEditingExpense(exp)}
       />
     </div>
   );
