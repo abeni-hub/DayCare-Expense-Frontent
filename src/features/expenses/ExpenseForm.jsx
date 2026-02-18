@@ -1,17 +1,123 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
+// ------------------------------------------------------------------
+// 1. MAIN APP COMPONENT (Handles Filtering & State)
+// ------------------------------------------------------------------
+export default function ExpenseManager() {
+  const [expenses, setExpenses] = useState([]);
+  const [editingExpense, setEditingExpense] = useState(null);
+
+  // Filtering States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const handleAddExpense = (expense) => {
+    if (editingExpense) {
+      setExpenses(expenses.map(e => e.id === expense.id ? expense : e));
+      setEditingExpense(null);
+    } else {
+      setExpenses([expense, ...expenses]);
+    }
+  };
+
+  // --- FILTERING LOGIC ---
+  const filteredExpenses = expenses.filter((exp) => {
+    const matchesSearch = exp.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          exp.supplier.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCat = filterCategory === "All" || exp.category === filterCategory;
+
+    // Date Logic
+    const expDate = new Date(exp.date);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    const matchesDate = (!start || expDate >= start) && (!end || expDate <= end);
+
+    return matchesSearch && matchesCat && matchesDate;
+  });
+
+  return (
+    <div style={{ padding: "40px", backgroundColor: "#f1f5f9", minHeight: "100vh" }}>
+
+      {/* FILTER SECTION */}
+      <div style={filterCardStyle}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "15px", alignItems: "end" }}>
+          <FormField label="Search Description/Supplier">
+            <input
+              style={inputStyle}
+              placeholder="🔍 Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Category">
+            <select style={inputStyle} value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+              <option>All</option>
+              <option>Food</option>
+              <option>Supplies</option>
+              <option>Utilities</option>
+            </select>
+          </FormField>
+          <FormField label="From Date">
+            <input type="date" style={inputStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </FormField>
+          <FormField label="To Date">
+            <input type="date" style={inputStyle} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </FormField>
+        </div>
+      </div>
+
+      {/* FORM SECTION */}
+      <ExpenseForm
+        onSubmit={handleAddExpense}
+        editingExpense={editingExpense}
+        clearEdit={() => setEditingExpense(null)}
+      />
+
+      {/* LIST SECTION (Summary of filtered results) */}
+      <div style={{ marginTop: "30px", maxWidth: 950, margin: "30px auto" }}>
+         <h3 style={sectionLabel}>Transactions ({filteredExpenses.length})</h3>
+         {filteredExpenses.length === 0 ? (
+           <p style={{color: '#94a3b8'}}>No expenses found matching those filters.</p>
+         ) : (
+           <div style={listContainer}>
+             {filteredExpenses.map(exp => (
+               <div key={exp.id} style={listItemStyle}>
+                 <div>
+                   <div style={{fontWeight: 700}}>{exp.description}</div>
+                   <div style={{fontSize: 12, color: '#64748b'}}>{exp.date} | {exp.category}</div>
+                 </div>
+                 <div style={{textAlign: 'right'}}>
+                   <div style={{fontWeight: 800, color: '#2563eb'}}>{exp.total.toLocaleString()} ETB</div>
+                   <button onClick={() => setEditingExpense(exp)} style={editBtnSmall}>Edit</button>
+                 </div>
+               </div>
+             ))}
+           </div>
+         )}
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
+// 2. YOUR UPDATED EXPENSE FORM COMPONENT
+// ------------------------------------------------------------------
 function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Food");
   const [supplier, setSupplier] = useState("");
-  const [items, setItems] = useState([{ id: Date.now(), name: "", qty: 1, unit: "pcs", price: 0 }]);
   const [paymentSource, setPaymentSource] = useState("Cash");
   const [cashAmount, setCashAmount] = useState(0);
   const [bankAmount, setBankAmount] = useState(0);
-  const [includeVAT, setIncludeVAT] = useState(false);
   const [remarks, setRemarks] = useState("");
   const [invoiceFile, setInvoiceFile] = useState(null);
+
+  const [items, setItems] = useState([
+    { id: Date.now(), name: "", qty: 1, price: 0, vat: 0 }
+  ]);
 
   useEffect(() => {
     if (editingExpense) {
@@ -23,150 +129,144 @@ function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       setPaymentSource(editingExpense.paymentSource || "Cash");
       setCashAmount(editingExpense.cashAmount || 0);
       setBankAmount(editingExpense.bankAmount || 0);
-      setIncludeVAT(editingExpense.includeVAT || false);
       setRemarks(editingExpense.remarks || "");
     }
   }, [editingExpense]);
 
-  // Calculations
-  const subtotal = items.reduce((sum, item) => sum + (Number(item.qty) * Number(item.price)), 0);
-  const vatAmount = includeVAT ? subtotal * 0.15 : 0;
-  const totalExpense = subtotal + vatAmount;
+  const subtotal = items.reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0);
+  const totalVatAmount = items.reduce((sum, item) => sum + (Number(item.qty) * Number(item.price) * (Number(item.vat) / 100)), 0);
+  const totalExpense = subtotal + totalVatAmount;
 
   const handleItemChange = (id, field, value) => {
-    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+    setItems(items.map((item) => item.id === id ? { ...item, [field]: value } : item));
   };
+
+  const addItem = () => setItems([...items, { id: Date.now(), name: "", qty: 1, price: 0, vat: 0 }]);
+  const removeItem = (id) => items.length > 1 && setItems(items.filter((item) => item.id !== id));
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Validation for "Both" payment source
-    if (paymentSource === "Both" && (Number(cashAmount) + Number(bankAmount) !== totalExpense)) {
-      alert(`The sum of Cash (${cashAmount}) and Bank (${bankAmount}) must equal the total (${totalExpense})`);
-      return;
-    }
-
     const expense = {
       id: editingExpense ? editingExpense.id : Date.now(),
-      date,
-      description,
-      category,
-      supplier,
-      items,
-      paymentSource,
-      cashAmount: paymentSource === "Both" ? cashAmount : (paymentSource === "Cash" ? totalExpense : 0),
-      bankAmount: paymentSource === "Both" ? bankAmount : (paymentSource === "Bank" ? totalExpense : 0),
-      subtotal,
-      vatAmount,
-      total: totalExpense,
-      remarks,
-      invoiceName: invoiceFile ? invoiceFile.name : null
+      date, description, category, supplier, items, subtotal, totalVatAmount, total: totalExpense,
+      paymentSource, cashAmount, bankAmount, remarks,
+      invoiceName: invoiceFile ? invoiceFile.name : editingExpense?.invoiceName || null
     };
-
     onSubmit(expense);
+    if(!editingExpense) {
+       setDescription(""); setSupplier(""); setItems([{ id: Date.now(), name: "", qty: 1, price: 0, vat: 0 }]);
+    }
   };
 
   return (
-    <div style={{ background: "#fff", padding: "30px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+    <div style={containerStyle}>
       <form onSubmit={handleSubmit}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#1e293b" }}>Add New Expense</h2>
-          <button type="button" onClick={clearEdit} style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "#94a3b8" }}>&times;</button>
+        <div style={headerStyle}>
+          <h2 style={titleStyle}>{editingExpense ? "Edit Expense" : "Add New Expense"}</h2>
+          <button type="button" onClick={clearEdit} style={closeBtnStyle}>✕</button>
         </div>
 
-        {/* Basic Info Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "25px" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#64748b", marginBottom: "8px" }}>Date *</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} required />
-          </div>
-          <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#64748b", marginBottom: "8px" }}>Description *</label>
-            <input type="text" placeholder="e.g., Supermarket Purchase" value={description} onChange={(e) => setDescription(e.target.value)} style={inputStyle} required />
-          </div>
+        <div style={rowGrid}>
+          <FormField label="Date *"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} required /></FormField>
+          <FormField label="Description *"><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} style={inputStyle} required /></FormField>
         </div>
 
-        {/* Items Section */}
-        <div style={{ marginBottom: "25px" }}>
-          <h4 style={{ margin: "0 0 15px 0", color: "#334155" }}>Expense Items</h4>
+        <div style={rowGrid}>
+          <FormField label="Category">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
+              <option>Food</option><option>Supplies</option><option>Utilities</option>
+            </select>
+          </FormField>
+          <FormField label="Supplier"><input type="text" value={supplier} onChange={(e) => setSupplier(e.target.value)} style={inputStyle} /></FormField>
+        </div>
+
+        <div style={{ marginBottom: 30 }}>
+          <div style={tableHeaderRow}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={sectionLabel}>Expense Items</span>
+              <button type="button" onClick={addItem} style={addItemBtn}>+ Add Item</button>
+            </div>
+            <div style={tableGridHeader}>
+              <span>Item Name</span><span>Qty</span><span>Price</span><span>VAT %</span><span style={{ textAlign: "right" }}>Total</span><span></span>
+            </div>
+          </div>
           {items.map((item) => (
-            <div key={item.id} style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
-              <input style={{ flex: 3, ...inputStyle }} placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} />
-              <input style={{ flex: 1, ...inputStyle }} type="number" placeholder="Qty" value={item.qty} onChange={(e) => handleItemChange(item.id, 'qty', e.target.value)} />
-              <input style={{ flex: 1, ...inputStyle }} type="number" placeholder="Price" value={item.price} onChange={(e) => handleItemChange(item.id, 'price', e.target.value)} />
-              <div style={{ alignSelf: "center", fontWeight: "600", minWidth: "80px", textAlign: "right" }}>{(item.qty * item.price).toFixed(2)}</div>
+            <div key={item.id} style={tableGridRow}>
+              <input style={inputStyle} value={item.name} onChange={(e) => handleItemChange(item.id, "name", e.target.value)} required />
+              <input type="number" style={inputStyle} value={item.qty} onChange={(e) => handleItemChange(item.id, "qty", e.target.value)} />
+              <input type="number" style={inputStyle} value={item.price} onChange={(e) => handleItemChange(item.id, "price", e.target.value)} />
+              <input type="number" style={inputStyle} value={item.vat} onChange={(e) => handleItemChange(item.id, "vat", e.target.value)} />
+              <div style={totalCell}>{((item.qty * item.price) * (1 + Number(item.vat) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              <button type="button" onClick={() => removeItem(item.id)} style={deleteBtn}>🗑</button>
             </div>
           ))}
         </div>
 
-        {/* VAT and Total Section */}
-        <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "15px", marginBottom: "25px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input type="checkbox" checked={includeVAT} onChange={(e) => setIncludeVAT(e.target.checked)} />
-              Include VAT (15%)
-            </label>
-            <span style={{ color: "#64748b" }}>VAT: {vatAmount.toFixed(2)} ETB</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.2rem", fontWeight: "bold", color: "#2563eb" }}>
-            <span>Total Expense:</span>
-            <span>{totalExpense.toFixed(2)} ETB</span>
+        <div style={summaryBox}>
+          <div style={{ textAlign: "right", flex: 1 }}>
+            <div style={calcLine}>Subtotal: <span>{subtotal.toLocaleString()} ETB</span></div>
+            <div style={calcLine}>VAT: <span>{totalVatAmount.toLocaleString()} ETB</span></div>
+            <div style={totalLine}>Grand Total: <span>{totalExpense.toLocaleString()} ETB</span></div>
           </div>
         </div>
 
-        {/* Payment Source Section */}
-        <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "8px", marginBottom: "25px", border: "1px solid #e2e8f0" }}>
-          <label style={{ display: "block", marginBottom: "15px", fontWeight: "600" }}>Payment Source</label>
-          <div style={{ display: "flex", gap: "20px", marginBottom: "15px" }}>
-            {["Cash", "Bank", "Both"].map(source => (
-              <label key={source} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                <input type="radio" name="payment" value={source} checked={paymentSource === source} onChange={(e) => setPaymentSource(e.target.value)} />
-                {source}
+        <FormField label="Payment Method">
+          <div style={paymentRow}>
+            {["Cash", "Bank", "Both"].map((s) => (
+              <label key={s} style={radioCard(paymentSource === s)}>
+                <input type="radio" value={s} checked={paymentSource === s} onChange={(e) => setPaymentSource(e.target.value)} hidden />
+                {s}
               </label>
             ))}
           </div>
+        </FormField>
 
-          {paymentSource === "Both" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", marginBottom: "5px" }}>Amount from Cash (ETB)</label>
-                <input type="number" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", marginBottom: "5px" }}>Amount from Bank (ETB)</label>
-                <input type="number" value={bankAmount} onChange={(e) => setBankAmount(e.target.value)} style={inputStyle} />
-              </div>
-            </div>
-          )}
+        <div style={rowGrid}>
+          <FormField label="Invoice"><input type="file" onChange={(e) => setInvoiceFile(e.target.files[0])} style={inputStyle} /></FormField>
+          <FormField label="Remarks"><textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} style={{ ...inputStyle, height: 42 }} /></FormField>
         </div>
 
-        {/* Final Inputs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "30px" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "14px", marginBottom: "8px" }}>Upload Invoice</label>
-            <input type="file" onChange={(e) => setInvoiceFile(e.target.files[0])} style={{ width: "100%" }} />
-          </div>
-          <div>
-            <label style={{ display: "block", fontSize: "14px", marginBottom: "8px" }}>Remarks</label>
-            <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Optional notes" style={{ ...inputStyle, height: "40px", resize: "none" }} />
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: "15px" }}>
-          <button type="button" onClick={clearEdit} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}>Cancel</button>
-          <button type="submit" style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", background: "#2563eb", color: "#fff", fontWeight: "600", cursor: "pointer" }}>Add Expense</button>
+        <div style={{ display: "flex", gap: 15 }}>
+          <button type="button" onClick={clearEdit} style={cancelBtn}>Cancel</button>
+          <button type="submit" style={submitBtn}>Save Transaction</button>
         </div>
       </form>
     </div>
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  borderRadius: "6px",
-  border: "1px solid #cbd5e1",
-  boxSizing: "border-box"
-};
+// ------------------------------------------------------------------
+// 3. SHARED UI COMPONENTS & STYLES
+// ------------------------------------------------------------------
+const FormField = ({ label, children }) => (
+  <div style={{width: '100%'}}>
+    <label style={labelStyle}>{label}</label>
+    {children}
+  </div>
+);
 
-export default ExpenseForm;
+const containerStyle = { background: "#fff", padding: 30, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: 950, margin: "auto" };
+const filterCardStyle = { background: "#fff", padding: 20, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: 950, margin: "0 auto 20px auto" };
+const inputStyle = { width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" };
+const rowGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 25 };
+const labelStyle = { display: "block", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", color: "#64748b" };
+const tableGridHeader = { display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr 1fr 1.5fr 40px", gap: 10, fontSize: 11, fontWeight: 800, textTransform: "uppercase", color: "#94a3b8" };
+const tableGridRow = { display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr 1fr 1.5fr 40px", gap: 10, marginBottom: 10, alignItems: "center" };
+const titleStyle = { margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" };
+const headerStyle = { display: "flex", justifyContent: "space-between", marginBottom: 25 };
+const closeBtnStyle = { background: "none", border: "none", fontSize: 20, cursor: "pointer" };
+const addItemBtn = { background: "#2563eb", border: "none", color: "#fff", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700 };
+const tableHeaderRow = { marginBottom: 15 };
+const totalCell = { textAlign: "right", fontWeight: 700 };
+const deleteBtn = { border: "none", background: "none", cursor: "pointer", color: "#ef4444" };
+const sectionLabel = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "#475569" };
+const summaryBox = { background: "#f8fafc", padding: 20, borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 25 };
+const calcLine = { fontSize: 14, display: "flex", justifyContent: "space-between", marginBottom: 5 };
+const totalLine = { fontSize: 18, fontWeight: 800, color: "#2563eb", display: "flex", justifyContent: "space-between", marginTop: 10 };
+const paymentRow = { display: "flex", gap: 10, marginBottom: 20 };
+const radioCard = (active) => ({ flex: 1, padding: 12, textAlign: "center", borderRadius: 8, cursor: "pointer", fontWeight: 600, border: active ? "2px solid #2563eb" : "1px solid #e2e8f0", background: active ? "#eff6ff" : "#fff" });
+const cancelBtn = { flex: 1, padding: 12, borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", fontWeight: 600, cursor: "pointer" };
+const submitBtn = { flex: 2, padding: 12, borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, cursor: "pointer" };
+const listItemStyle = { display: 'flex', justifyContent: 'space-between', padding: '15px', background: '#fff', borderBottom: '1px solid #e2e8f0', alignItems: 'center' };
+const listContainer = { borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' };
+const editBtnSmall = { background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '12px', fontWeight: '700' };
