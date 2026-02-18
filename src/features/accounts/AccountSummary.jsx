@@ -3,27 +3,20 @@ import React from "react";
 function AccountSummary({ account, isCombined }) {
   if (!account) return null;
 
-  // Determine Icon and Theme based on account name
   const isBank = account.name.toLowerCase().includes("bank");
   const isCash = account.name.toLowerCase().includes("cash");
 
-  const getCardStyle = () => {
-    if (isCombined) {
-      return {
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-        color: "#ffffff",
-      };
-    }
-    return {
-      background: "#ffffff",
-      color: "#1e293b",
-      border: "1px solid #e2e8f0",
-    };
+  // Professional gradient selection for a white background layout
+  const getGradient = () => {
+    if (isCombined) return "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)"; // Deep Midnight
+    if (isBank) return "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)";     // Vivid Blue
+    if (isCash) return "linear-gradient(135deg, #10b981 0%, #059669 100%)";     // Emerald Green
+    return "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)";                // Purple
   };
 
   const getIcon = () => {
-    if (isCombined) return "🌍";
-    if (isBank) return "🏦";
+    if (isCombined) return "💎";
+    if (isBank) return "🏛️";
     if (isCash) return "💵";
     return "💳";
   };
@@ -31,85 +24,59 @@ function AccountSummary({ account, isCombined }) {
   return (
     <div
       style={{
-        ...getCardStyle(),
-        padding: "30px",
+        background: getGradient(),
+        color: "#ffffff",
+        padding: "24px",
         borderRadius: "20px",
-        width: "320px", // Made it wider
-        boxShadow: isCombined
-          ? "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-          : "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+        width: "320px",
+        minWidth: "320px", // Ensures it stays wide in a flex row
+        height: "190px",
+        boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
         position: "relative",
-        overflow: "hidden",
-        transition: "transform 0.2s ease",
-        cursor: "default"
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        transition: "transform 0.3s ease",
+        marginRight: "20px"
       }}
     >
-      {/* Decorative background circle for fancy look */}
+      {/* Glossy Overlay effect */}
       <div style={{
         position: "absolute",
-        top: "-20px",
-        right: "-20px",
-        width: "100px",
-        height: "100px",
-        borderRadius: "50%",
-        background: isCombined ? "rgba(255,255,255,0.05)" : "rgba(59, 130, 246, 0.03)",
-        zIndex: 0
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)",
+        borderRadius: "20px",
+        pointerEvents: "none"
       }} />
 
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "20px" }}>
-          <div style={{
-            fontSize: "24px",
-            background: isCombined ? "rgba(255,255,255,0.1)" : "#f1f5f9",
-            width: "50px",
-            height: "50px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "12px"
-          }}>
-            {getIcon()}
-          </div>
-          <span style={{
-            fontSize: "12px",
-            fontWeight: "bold",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            opacity: 0.6
-          }}>
-            {isCombined ? "Primary Portfolio" : "Active Account"}
-          </span>
-        </div>
-
-        <h3 style={{
-          fontSize: "16px",
-          fontWeight: "500",
-          margin: "0 0 8px 0",
-          opacity: isCombined ? 0.8 : 1
-        }}>
-          {account.name}
-        </h3>
-
-        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-          <span style={{ fontSize: "28px", fontWeight: "800" }}>
-            {account.balance?.toLocaleString() ?? 0}
-          </span>
-          <span style={{ fontSize: "14px", fontWeight: "600", opacity: 0.6 }}>
-            ETB
-          </span>
-        </div>
-
+      {/* Top Section */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: "28px", opacity: 0.9 }}>{getIcon()}</div>
         <div style={{
-          marginTop: "20px",
-          paddingTop: "15px",
-          borderTop: isCombined ? "1px solid rgba(255,255,255,0.1)" : "1px solid #f1f5f9",
-          fontSize: "12px",
-          display: "flex",
-          justifyContent: "space-between"
+          fontSize: "10px",
+          fontWeight: "bold",
+          letterSpacing: "1.5px",
+          textTransform: "uppercase",
+          backgroundColor: "rgba(255,255,255,0.15)",
+          padding: "4px 10px",
+          borderRadius: "6px"
         }}>
-          <span>Status: <span style={{ color: isCombined ? "#10b981" : "#059669" }}>● Online</span></span>
-          <span>Updated Just Now</span>
+          {isCombined ? "Portfolio" : "Account"}
         </div>
+      </div>
+
+      {/* Center Section: Balance */}
+      <div>
+        <p style={{ margin: 0, fontSize: "12px", fontWeight: "300", opacity: 0.8 }}>Available Balance</p>
+        <div style={{ fontSize: "26px", fontWeight: "700", marginTop: "4px" }}>
+          {account.balance?.toLocaleString()} <span style={{ fontSize: "14px", fontWeight: "400", opacity: 0.7 }}>ETB</span>
+        </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <span style={{ fontSize: "15px", fontWeight: "600", letterSpacing: "0.5px" }}>{account.name}</span>
+        <div style={{ opacity: 0.5, fontSize: "20px" }}>VISA</div>
       </div>
     </div>
   );
