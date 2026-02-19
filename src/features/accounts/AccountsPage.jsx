@@ -1,10 +1,45 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import AccountSummary from "./AccountSummary";
+import { getAccounts } from "../../apis/accounts.api";
 
-function AccountsPage({ accounts = [] }) {
-  if (!accounts || accounts.length === 0) return <p>No accounts found.</p>;
+function AccountsPage() {
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const combinedBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      const data = await getAccounts();
+      console.log("API Response:", data); // IMPORTANT: check this
+      setAccounts(data);
+    } catch (error) {
+      console.error("Failed to fetch accounts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <p>Loading accounts...</p>;
+
+  if (!accounts || accounts.length === 0)
+    return <p>No accounts found.</p>;
+
+  // 🔎 Extract specific accounts safely
+  const cashAccount = accounts.find(
+    (acc) => acc.account_type === "cash"
+  );
+
+  const bankAccount = accounts.find(
+    (acc) => acc.account_type === "bank"
+  );
+
+  // 💡 Compute combined safely
+  const combinedBalance =
+    (Number(cashAccount?.balance || 0)) +
+    (Number(bankAccount?.balance || 0));
 
   const combinedAccount = {
     id: "combined",
@@ -15,63 +50,63 @@ function AccountsPage({ accounts = [] }) {
   return (
     <div style={{ padding: "10px" }}>
       <header style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a" }}>My Accounts</h1>
-        <p style={{ color: "#64748b" }}>Overview of your daycare's financial assets.</p>
+        <h1
+          style={{
+            fontSize: "28px",
+            fontWeight: "800",
+            color: "#0f172a",
+          }}
+        >
+          My Accounts
+        </h1>
+        <p style={{ color: "#64748b" }}>
+          Overview of your daycare's financial assets.
+        </p>
       </header>
 
-      {/* HORIZONTAL CARDS CONTAINER */}
       <div
         style={{
           display: "flex",
           overflowX: "auto",
           paddingBottom: "20px",
-          paddingLeft: "5px",
-          scrollBehavior: "smooth",
-          // Hide scrollbar for Chrome/Safari/Firefox
-          msOverflowStyle: "none",
-          scrollbarWidth: "none"
+          gap: "20px",
         }}
       >
-        {/* Combined Account First */}
-        <AccountSummary account={combinedAccount} isCombined={true} />
+        {/* Combined Always First */}
+        <AccountSummary
+          key="combined"
+          account={combinedAccount}
+          isCombined={true}
+        />
 
-        {/* Individual Accounts */}
-        {accounts.map((account) => (
+        {/* Bank Account */}
+        {bankAccount && (
           <AccountSummary
-            key={account.id}
-            account={account}
+            key={bankAccount.id}
+            account={{
+              id: bankAccount.id,
+              name: bankAccount.name || "Bank",
+              balance: Number(bankAccount.balance),
+            }}
             isCombined={false}
           />
-        ))}
-      </div>
+        )}
 
-      {/* Stats Breakdown Section below cards */}
-      <div style={{
-        marginTop: "40px",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: "24px"
-      }}>
-        <div style={detailBox}>
-          <h4>Asset Concentration</h4>
-          <p>Your largest holding is currently in your <strong>Bank Account</strong>.</p>
-        </div>
-        <div style={detailBox}>
-          <h4>Recent Activity</h4>
-          <p>No major transfers detected in the last 24 hours.</p>
-        </div>
+        {/* Cash Account */}
+        {cashAccount && (
+          <AccountSummary
+            key={cashAccount.id}
+            account={{
+              id: cashAccount.id,
+              name: cashAccount.name || "Cash",
+              balance: Number(cashAccount.balance),
+            }}
+            isCombined={false}
+          />
+        )}
       </div>
     </div>
   );
 }
-
-const detailBox = {
-  backgroundColor: "#fff",
-  padding: "20px",
-  borderRadius: "16px",
-  border: "1px solid #e2e8f0",
-  fontSize: "14px",
-  color: "#475569"
-};
 
 export default AccountsPage;
