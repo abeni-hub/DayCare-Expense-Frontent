@@ -2,7 +2,8 @@ import axios from "./axios";
 
 export const getExpenses = async () => {
   const response = await axios.get("expenses/");
-  return response.data;
+  // Handle both paginated (results) and non-paginated responses
+  return response.data.results || response.data;
 };
 
 export const createExpense = async (data) => {
