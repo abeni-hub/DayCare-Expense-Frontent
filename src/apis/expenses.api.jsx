@@ -1,18 +1,22 @@
-import api from './axios';
+// src/api/expenses.api.jsx
+import axios from "./axios";
 
-// Get all expenses
 export const getExpenses = async () => {
-  const response = await api.get('/expenses/');
+  const response = await axios.get("expenses/");
   return response.data;
 };
 
-// Create new expense (expects object with nested items)
-export const createExpense = async (expenseData) => {
-  const response = await api.get('/expenses/', expenseData);
+export const createExpense = async (data) => {
+  const response = await axios.post("expenses/", data);
   return response.data;
 };
 
-// Delete an expense
+export const updateExpense = async (id, data) => {
+  const response = await axios.put(`expenses/${id}/`, data);
+  return response.data;
+};
+
 export const deleteExpense = async (id) => {
-  await api.delete(`/expenses/${id}/`);
+  const response = await axios.delete(`expenses/${id}/`);
+  return response.data;
 };
