@@ -4,12 +4,11 @@ import ExpenseList from "./ExpenseList";
 import { getExpenses, deleteExpense } from "../../apis/expenses.api";
 
 function ExpensesPage() {
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState([]); // Initialized as empty array
   const [editingExpense, setEditingExpense] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch data from Django on component mount
   useEffect(() => {
     loadExpenses();
   }, []);
@@ -17,9 +16,11 @@ function ExpensesPage() {
   const loadExpenses = async () => {
     try {
       const data = await getExpenses();
-      setExpenses(data);
+      // Double check that we are setting an array
+      setExpenses(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch expenses:", err);
+      setExpenses([]);
     } finally {
       setLoading(false);
     }
@@ -27,28 +28,26 @@ function ExpensesPage() {
 
   const handleFormSubmit = (savedExpense) => {
     if (editingExpense) {
-      // Update list with the edited object from server
-      setExpenses(expenses.map(e => e.id === savedExpense.id ? savedExpense : e));
+      setExpenses(prev => prev.map(e => e.id === savedExpense.id ? savedExpense : e));
     } else {
-      // Add new object to the top
-      setExpenses([savedExpense, ...expenses]);
+      setExpenses(prev => [savedExpense, ...prev]);
     }
     setEditingExpense(null);
     setIsAdding(false);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this expense?")) {
+    if (window.confirm("Are you sure?")) {
       try {
         await deleteExpense(id);
-        setExpenses(expenses.filter(e => e.id !== id));
+        setExpenses(prev => prev.filter(e => e.id !== id));
       } catch (err) {
-        alert("Delete failed. Please try again.");
+        alert("Delete failed.");
       }
     }
   };
 
-  if (loading) return <div style={{ padding: '20px' }}>Loading transaction data...</div>;
+  if (loading) return <div style={{ padding: '20px' }}>Loading...</div>;
 
   return (
     <div style={{ padding: '20px' }}>

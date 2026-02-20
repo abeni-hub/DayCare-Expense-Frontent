@@ -8,11 +8,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const [supplier, setSupplier] = useState("");
   const [paymentSource, setPaymentSource] = useState("cash");
   const [remarks, setRemarks] = useState("");
-
-  // DRF expects item_name, quantity, unit_price
-  const [items, setItems] = useState([
-    { id: Date.now(), item_name: "", quantity: 1, unit_price: 0 }
-  ]);
+  const [items, setItems] = useState([{ id: Date.now(), item_name: "", quantity: 1, unit_price: 0 }]);
 
   useEffect(() => {
     if (editingExpense) {
@@ -22,7 +18,10 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       setSupplier(editingExpense.supplier || "");
       setPaymentSource(editingExpense.payment_source || "cash");
       setRemarks(editingExpense.remarks || "");
-      setItems(editingExpense.items || [{ id: Date.now(), item_name: "", quantity: 1, unit_price: 0 }]);
+      // Map existing items
+      if (editingExpense.items) {
+        setItems(editingExpense.items.map(i => ({ ...i, id: i.id || Date.now() + Math.random() })));
+      }
     }
   }, [editingExpense]);
 
@@ -37,7 +36,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const payload = {
       date,
       description,
@@ -45,20 +43,15 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       supplier,
       payment_source: paymentSource,
       remarks,
-      items: items.map(({ id, ...rest }) => rest), // Remove local IDs before sending
+      items: items.map(({ id, ...rest }) => rest),
       vat_enabled: false
     };
 
     try {
-      let response;
-      if (editingExpense) {
-        response = await updateExpense(editingExpense.id, payload);
-      } else {
-        response = await createExpense(payload);
-      }
+      const response = editingExpense ? await updateExpense(editingExpense.id, payload) : await createExpense(payload);
       onSubmit(response);
     } catch (err) {
-      alert(err.response?.data?.detail || "An error occurred while saving.");
+      alert(err.response?.data?.detail || "Error saving transaction.");
     }
   };
 
@@ -135,7 +128,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   );
 }
 
-// SHARED STYLES (Kept exactly as original)
+// ... (Constants for styles - exactly as before)
 const FormField = ({ label, children }) => ( <div style={{width: '100%'}}><label style={labelStyle}>{label}</label>{children}</div> );
 const containerStyle = { background: "#fff", padding: 30, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: 950, margin: "auto" };
 const inputStyle = { width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" };
