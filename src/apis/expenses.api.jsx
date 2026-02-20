@@ -1,4 +1,3 @@
-// src/api/expenses.api.jsx
 import axios from "./axios";
 
 export const getExpenses = async () => {

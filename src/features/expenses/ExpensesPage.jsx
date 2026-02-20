@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
-import { getExpenses, deleteExpense } from "../../api/expenses.api";
+import { getExpenses, deleteExpense } from "../../apis/expenses.api";
 
 function ExpensesPage() {
   const [expenses, setExpenses] = useState([]);
@@ -9,59 +9,70 @@ function ExpensesPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Fetch data from Django on component mount
   useEffect(() => {
-    fetchData();
+    loadExpenses();
   }, []);
 
-  const fetchData = async () => {
+  const loadExpenses = async () => {
     try {
       const data = await getExpenses();
       setExpenses(data);
     } catch (err) {
-      console.error("Load failed");
+      console.error("Failed to fetch expenses:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFormSubmit = (data) => {
+  const handleFormSubmit = (savedExpense) => {
     if (editingExpense) {
-      setExpenses(expenses.map(e => e.id === data.id ? data : e));
+      // Update list with the edited object from server
+      setExpenses(expenses.map(e => e.id === savedExpense.id ? savedExpense : e));
     } else {
-      setExpenses([data, ...expenses]);
+      // Add new object to the top
+      setExpenses([savedExpense, ...expenses]);
     }
-    setIsAdding(false);
     setEditingExpense(null);
+    setIsAdding(false);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Delete this transaction?")) {
+    if (window.confirm("Are you sure you want to delete this expense?")) {
       try {
         await deleteExpense(id);
         setExpenses(expenses.filter(e => e.id !== id));
       } catch (err) {
-        alert("Delete failed");
+        alert("Delete failed. Please try again.");
       }
     }
   };
 
-  if (loading) return <div style={{ padding: "20px" }}>Loading...</div>;
+  if (loading) return <div style={{ padding: '20px' }}>Loading transaction data...</div>;
 
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h2 style={{fontWeight: 800}}>Expenses</h2>
-        <button onClick={() => setIsAdding(true)} style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}>
+        <h2 style={{ fontWeight: 800 }}>Expenses</h2>
+        <button
+          onClick={() => setIsAdding(true)}
+          style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}
+        >
           + Add Expense
         </button>
       </div>
 
       {(isAdding || editingExpense) && (
-        <ExpenseForm
-          onSubmit={handleFormSubmit}
-          editingExpense={editingExpense}
-          clearEdit={() => { setIsAdding(false); setEditingExpense(null); }}
-        />
+        <div style={{ marginBottom: '30px' }}>
+          <ExpenseForm
+            onSubmit={handleFormSubmit}
+            editingExpense={editingExpense}
+            clearEdit={() => {
+              setEditingExpense(null);
+              setIsAdding(false);
+            }}
+          />
+        </div>
       )}
 
       <ExpenseList

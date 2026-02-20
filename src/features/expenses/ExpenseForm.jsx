@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { createExpense, updateExpense } from "../../apis/expense.api"; // Ensure these exist
+import { createExpense, updateExpense } from "../../apis/expenses.api";
 
-function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
+export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Food");
   const [supplier, setSupplier] = useState("");
-  const [paymentSource, setPaymentSource] = useState("cash"); // Match Django lowercase choices
+  const [paymentSource, setPaymentSource] = useState("cash");
   const [remarks, setRemarks] = useState("");
+
+  // DRF expects item_name, quantity, unit_price
   const [items, setItems] = useState([
-    { id: Date.now(), item_name: "", quantity: 1, unit_price: 0, unit: "pcs" }
+    { id: Date.now(), item_name: "", quantity: 1, unit_price: 0 }
   ]);
 
   useEffect(() => {
@@ -18,63 +20,48 @@ function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       setDescription(editingExpense.description || "");
       setCategory(editingExpense.category || "Food");
       setSupplier(editingExpense.supplier || "");
-      // Map backend fields back to frontend state if names differ
-      setItems(editingExpense.items?.map(item => ({
-        ...item,
-        qty: item.quantity,
-        price: item.unit_price
-      })) || []);
       setPaymentSource(editingExpense.payment_source || "cash");
       setRemarks(editingExpense.remarks || "");
+      setItems(editingExpense.items || [{ id: Date.now(), item_name: "", quantity: 1, unit_price: 0 }]);
     }
   }, [editingExpense]);
 
-  // UI Calculations (Visual only)
-  const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0);
-  const totalExpense = subtotal; // Simplified as per your current DRF logic which calculates VAT on save
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_price)), 0);
 
   const handleItemChange = (id, field, value) => {
     setItems(items.map((item) => item.id === id ? { ...item, [field]: value } : item));
   };
 
-  const addItem = () => setItems([...items, { id: Date.now(), item_name: "", quantity: 1, unit_price: 0, unit: "pcs" }]);
+  const addItem = () => setItems([...items, { id: Date.now(), item_name: "", quantity: 1, unit_price: 0 }]);
   const removeItem = (id) => items.length > 1 && setItems(items.filter((item) => item.id !== id));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // FORMAT FOR DJANGO BACKEND
     const payload = {
       date,
       description,
       category,
       supplier,
-      payment_source: paymentSource.toLowerCase(),
+      payment_source: paymentSource,
       remarks,
-      items: items.map(item => ({
-        item_name: item.item_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        unit: item.unit || "pcs"
-      })),
-      vat_enabled: false, // Set based on your needs
-      vat_rate: 0
+      items: items.map(({ id, ...rest }) => rest), // Remove local IDs before sending
+      vat_enabled: false
     };
 
     try {
-      let savedData;
+      let response;
       if (editingExpense) {
-        savedData = await updateExpense(editingExpense.id, payload);
+        response = await updateExpense(editingExpense.id, payload);
       } else {
-        savedData = await createExpense(payload);
+        response = await createExpense(payload);
       }
-      onSubmit(savedData); // Pass the response back to parent
-    } catch (error) {
-      alert(error.response?.data?.detail || "Error saving transaction");
+      onSubmit(response);
+    } catch (err) {
+      alert(err.response?.data?.detail || "An error occurred while saving.");
     }
   };
 
-  // --- REST OF YOUR UI (STAYED EXACTLY THE SAME) ---
   return (
     <div style={containerStyle}>
       <form onSubmit={handleSubmit}>
@@ -109,7 +96,7 @@ function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
           </div>
           {items.map((item) => (
             <div key={item.id} style={tableGridRow}>
-              <input style={inputStyle} placeholder="Item Name" value={item.item_name} onChange={(e) => handleItemChange(item.id, "item_name", e.target.value)} required />
+              <input style={inputStyle} value={item.item_name} onChange={(e) => handleItemChange(item.id, "item_name", e.target.value)} required />
               <input type="number" style={inputStyle} value={item.quantity} onChange={(e) => handleItemChange(item.id, "quantity", e.target.value)} />
               <input type="number" style={inputStyle} value={item.unit_price} onChange={(e) => handleItemChange(item.id, "unit_price", e.target.value)} />
               <div style={totalCell}>{(item.quantity * item.unit_price).toLocaleString()}</div>
@@ -126,10 +113,10 @@ function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
         <FormField label="Payment Method">
           <div style={paymentRow}>
-            {["Cash", "Bank"].map((s) => (
-              <label key={s} style={radioCard(paymentSource.toLowerCase() === s.toLowerCase())}>
-                <input type="radio" value={s.toLowerCase()} checked={paymentSource.toLowerCase() === s.toLowerCase()} onChange={(e) => setPaymentSource(e.target.value)} hidden />
-                {s}
+            {["cash", "bank"].map((s) => (
+              <label key={s} style={radioCard(paymentSource === s)}>
+                <input type="radio" value={s} checked={paymentSource === s} onChange={(e) => setPaymentSource(e.target.value)} hidden />
+                {s.toUpperCase()}
               </label>
             ))}
           </div>
@@ -148,14 +135,8 @@ function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   );
 }
 
-// ... (Constants for styles remain exactly as you provided)
-const FormField = ({ label, children }) => (
-  <div style={{width: '100%'}}>
-    <label style={labelStyle}>{label}</label>
-    {children}
-  </div>
-);
-
+// SHARED STYLES (Kept exactly as original)
+const FormField = ({ label, children }) => ( <div style={{width: '100%'}}><label style={labelStyle}>{label}</label>{children}</div> );
 const containerStyle = { background: "#fff", padding: 30, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: 950, margin: "auto" };
 const inputStyle = { width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" };
 const rowGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 25 };
@@ -176,5 +157,3 @@ const paymentRow = { display: "flex", gap: 10, marginBottom: 20 };
 const radioCard = (active) => ({ flex: 1, padding: 12, textAlign: "center", borderRadius: 8, cursor: "pointer", fontWeight: 600, border: active ? "2px solid #2563eb" : "1px solid #e2e8f0", background: active ? "#eff6ff" : "#fff" });
 const cancelBtn = { flex: 1, padding: 12, borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", fontWeight: 600, cursor: "pointer" };
 const submitBtn = { flex: 2, padding: 12, borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, cursor: "pointer" };
-
-export default ExpenseForm;
