@@ -4,7 +4,7 @@ import ExpenseList from "./ExpenseList";
 import { getExpenses, deleteExpense } from "../../apis/expenses.api";
 
 function ExpensesPage() {
-  const [expenses, setExpenses] = useState([]); // Initialized as empty array
+  const [expenses, setExpenses] = useState([]);
   const [editingExpense, setEditingExpense] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -16,45 +16,44 @@ function ExpensesPage() {
   const loadExpenses = async () => {
     try {
       const data = await getExpenses();
-      // Double check that we are setting an array
       setExpenses(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch expenses:", err);
+      console.error("Fetch error:", err);
       setExpenses([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFormSubmit = (savedExpense) => {
+  const handleFormSubmit = (savedData) => {
     if (editingExpense) {
-      setExpenses(prev => prev.map(e => e.id === savedExpense.id ? savedExpense : e));
+      setExpenses(prev => prev.map(e => e.id === savedData.id ? savedData : e));
     } else {
-      setExpenses(prev => [savedExpense, ...prev]);
+      setExpenses(prev => [savedData, ...prev]);
     }
     setEditingExpense(null);
     setIsAdding(false);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure?")) {
+    if (window.confirm("Delete this expense?")) {
       try {
         await deleteExpense(id);
         setExpenses(prev => prev.filter(e => e.id !== id));
       } catch (err) {
-        alert("Delete failed.");
+        alert("Delete failed");
       }
     }
   };
 
-  if (loading) return <div style={{ padding: '20px' }}>Loading...</div>;
+  if (loading) return <div style={{padding: '20px'}}>Loading...</div>;
 
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h2 style={{ fontWeight: 800 }}>Expenses</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+        <h2 style={{ fontWeight: 800, margin: 0 }}>Expenses</h2>
         <button
-          onClick={() => setIsAdding(true)}
+          onClick={() => { setEditingExpense(null); setIsAdding(true); }}
           style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}
         >
           + Add Expense
@@ -66,10 +65,7 @@ function ExpensesPage() {
           <ExpenseForm
             onSubmit={handleFormSubmit}
             editingExpense={editingExpense}
-            clearEdit={() => {
-              setEditingExpense(null);
-              setIsAdding(false);
-            }}
+            clearEdit={() => { setEditingExpense(null); setIsAdding(false); }}
           />
         </div>
       )}
@@ -77,7 +73,7 @@ function ExpensesPage() {
       <ExpenseList
         expenses={expenses}
         onDeleteExpense={handleDelete}
-        onEditClick={(exp) => setEditingExpense(exp)}
+        onEditClick={(exp) => { setEditingExpense(exp); setIsAdding(false); }}
       />
     </div>
   );
