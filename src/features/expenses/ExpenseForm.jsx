@@ -73,7 +73,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
     }));
 
     formData.append("items", JSON.stringify(processedItems));
-    formData.append("vat_enabled", processedItems.some(i => i.vat_rate > 0));
+    // formData.append("vat_enabled", processedItems.some(i => i.vat_rate > 0));
 
     try {
       const res = editingExpense
