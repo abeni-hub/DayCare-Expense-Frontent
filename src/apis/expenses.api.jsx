@@ -6,8 +6,15 @@ export const getExpenses = async () => {
   return response.data.results || response.data;
 };
 
-export const createExpense = async (data) => {
-  const response = await axios.post("expenses/", data);
+export const createExpense = async (formData) => {
+  // Pass formData directly as the second argument
+  const response = await axios.post(`${API_URL}/expenses/`, formData, {
+    headers: {
+      // Axios usually sets this automatically for FormData,
+      // but being explicit helps avoid errors
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
 
