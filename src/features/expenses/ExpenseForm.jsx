@@ -87,6 +87,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       res = await updateExpense(expenseId, formData);
     } else {
       res = await createExpense(formData);
+      console.log("Sending Data:", data);
     }
 
     console.log("SUCCESS RESPONSE:", res);
