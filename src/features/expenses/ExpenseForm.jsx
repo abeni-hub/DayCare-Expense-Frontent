@@ -49,9 +49,11 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const removeItem = (id) => items.length > 1 && setItems(items.filter((item) => item.id !== id));
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
+  try {
     const formData = new FormData();
+
     formData.append("date", date);
     formData.append("description", description);
     formData.append("category", category);
@@ -60,12 +62,11 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
     formData.append("remarks", remarks || "");
 
     if (invoiceFile) {
-        formData.append("invoice", invoiceFile);
+      formData.append("invoice", invoiceFile);
     }
 
-    // This part ensures VAT and UNIT reach the backend correctly
     const processedItems = items.map((item) => ({
-      item_name: item.item_name,
+      item_name: item.item_name || "",
       quantity: Number(item.quantity) || 0,
       unit: item.unit || "pcs",
       unit_price: Number(item.unit_price) || 0,
@@ -73,22 +74,46 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
     }));
 
     formData.append("items", JSON.stringify(processedItems));
-    // formData.append("vat_enabled", processedItems.some(i => i.vat_rate > 0));
 
-    try {
-      const res = editingExpense
-        ? await updateExpense(editingExpense.id, formData)
-        : await createExpense(formData);
-      onSubmit(res);
-      clearEdit();
-    } catch (err) {
-      console.error("Submission Error Details:", err.response?.data);
-      const message = err.response?.data?.detail
-        || JSON.stringify(err.response?.data)
-        || "Server Error: Check console for details.";
-      alert("Error: " + message);
+    // 🔥 VERY IMPORTANT FIX:
+    // Some backends expect total_amount
+    formData.append("total_amount", grandTotal);
+
+    let res;
+
+    if (editingExpense) {
+      // 🔥 FIX: Support both id and _id (MongoDB safe)
+      const expenseId = editingExpense._id || editingExpense.id;
+      res = await updateExpense(expenseId, formData);
+    } else {
+      res = await createExpense(formData);
     }
-  };
+
+    console.log("SUCCESS RESPONSE:", res);
+
+    if (onSubmit) onSubmit(res);
+    if (clearEdit) clearEdit();
+
+  } catch (err) {
+    console.error("FULL ERROR OBJECT:", err);
+
+    if (err.response) {
+      console.error("Backend Response Data:", err.response.data);
+      console.error("Status Code:", err.response.status);
+
+      alert(
+        err.response.data?.detail ||
+        err.response.data?.message ||
+        JSON.stringify(err.response.data)
+      );
+
+    } else if (err.request) {
+      alert("No response received from backend server.");
+    } else {
+      alert("Error: " + err.message);
+    }
+  }
+};
 
   return (
     <div style={containerStyle}>
