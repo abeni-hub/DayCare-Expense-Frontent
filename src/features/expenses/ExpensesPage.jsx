@@ -10,14 +10,18 @@ function ExpensesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load expenses when page loads OR when you come back from another page
   const loadExpenses = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await getExpenses();
-      console.log("✅ API Response (Expenses):", data);   // ← This will show your data
-      setExpenses(Array.isArray(data) ? data : []);
+
+      console.log("✅ API Response (Expenses):", data);
+
+      // 🔥 THIS IS THE FIX — handle DRF pagination
+      const expenseList = data?.results || (Array.isArray(data) ? data : []);
+      setExpenses(expenseList);
+
     } catch (err) {
       console.error("❌ Fetch error:", err);
       setError("Failed to load expenses. Please check server.");
@@ -27,15 +31,13 @@ function ExpensesPage() {
     }
   };
 
-  // Run on first load + every time component mounts (after navigation back)
   useEffect(() => {
     loadExpenses();
   }, []);
 
-  // After successful create or update → refresh the list from server
   const handleFormSubmit = (savedData) => {
     console.log("✅ Form submitted successfully:", savedData);
-    loadExpenses();                    // ← THIS IS THE IMPORTANT FIX
+    loadExpenses();           // ← refresh list from server
     setEditingExpense(null);
     setIsAdding(false);
   };
@@ -44,7 +46,7 @@ function ExpensesPage() {
     if (window.confirm("Delete this expense?")) {
       try {
         await deleteExpense(id);
-        loadExpenses();                // refresh list after delete
+        loadExpenses();       // ← refresh after delete
       } catch (err) {
         alert("Delete failed");
       }
