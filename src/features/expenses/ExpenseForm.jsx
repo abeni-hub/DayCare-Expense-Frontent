@@ -83,9 +83,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
       formData.append("items_input", JSON.stringify(processedItems));
 
-      // ✅ REMOVED: total_amount (serializer now auto-calculates total_expense)
-      // formData.append("total_amount", grandTotal);   ← DELETED
-
       let res;
 
       if (editingExpense) {
@@ -93,7 +90,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         res = await updateExpense(expenseId, formData);
       } else {
         res = await createExpense(formData);
-        console.log("✅ Sending processedItems:", processedItems); // fixed debug
+        console.log("✅ Sending processedItems:", processedItems);
       }
 
       console.log("✅ SUCCESS RESPONSE:", res);
