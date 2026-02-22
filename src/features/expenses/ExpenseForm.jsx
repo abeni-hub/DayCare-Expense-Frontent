@@ -22,6 +22,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       setSupplier(editingExpense.supplier || "");
       setPaymentSource(editingExpense.payment_source || "cash");
       setRemarks(editingExpense.remarks || "");
+
       if (editingExpense.items) {
         setItems(editingExpense.items.map(i => ({
           ...i,
@@ -42,79 +43,83 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const grandTotal = items.reduce((sum, item) => sum + calculateRowTotal(item), 0);
 
   const handleItemChange = (id, field, value) => {
-    setItems(items.map((item) => item.id === id ? { ...item, [field]: value } : item));
+    setItems(items.map((item) =>
+      item.id === id ? { ...item, [field]: value } : item
+    ));
   };
 
-  const addItem = () => setItems([...items, { id: Date.now(), item_name: "", quantity: 1, unit: "pcs", unit_price: 0, vat_rate: 0 }]);
-  const removeItem = (id) => items.length > 1 && setItems(items.filter((item) => item.id !== id));
+  const addItem = () => setItems([
+    ...items,
+    { id: Date.now(), item_name: "", quantity: 1, unit: "pcs", unit_price: 0, vat_rate: 0 }
+  ]);
+
+  const removeItem = (id) =>
+    items.length > 1 && setItems(items.filter((item) => item.id !== id));
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const formData = new FormData();
+    try {
+      const formData = new FormData();
 
-    formData.append("date", date);
-    formData.append("description", description);
-    formData.append("category", category);
-    formData.append("supplier", supplier || "");
-    formData.append("payment_source", paymentSource);
-    formData.append("remarks", remarks || "");
+      formData.append("date", date);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("supplier", supplier || "");
+      formData.append("payment_source", paymentSource);
+      formData.append("remarks", remarks || "");
 
-    if (invoiceFile) {
-      formData.append("invoice", invoiceFile);
+      if (invoiceFile) {
+        formData.append("invoice", invoiceFile);
+      }
+
+      const processedItems = items.map((item) => ({
+        item_name: item.item_name || "",
+        quantity: Number(item.quantity) || 0,
+        unit: item.unit || "pcs",
+        unit_price: Number(item.unit_price) || 0,
+        vat_rate: Number(item.vat_rate) || 0
+      }));
+
+      formData.append("items_input", JSON.stringify(processedItems));
+
+      // ✅ REMOVED: total_amount (serializer now auto-calculates total_expense)
+      // formData.append("total_amount", grandTotal);   ← DELETED
+
+      let res;
+
+      if (editingExpense) {
+        const expenseId = editingExpense._id || editingExpense.id;
+        res = await updateExpense(expenseId, formData);
+      } else {
+        res = await createExpense(formData);
+        console.log("✅ Sending processedItems:", processedItems); // fixed debug
+      }
+
+      console.log("✅ SUCCESS RESPONSE:", res);
+
+      if (onSubmit) onSubmit(res);
+      if (clearEdit) clearEdit();
+
+    } catch (err) {
+      console.error("FULL ERROR OBJECT:", err);
+
+      if (err.response) {
+        console.error("Backend Response Data:", err.response.data);
+        console.error("Status Code:", err.response.status);
+
+        alert(
+          err.response.data?.detail ||
+          err.response.data?.message ||
+          JSON.stringify(err.response.data)
+        );
+      } else if (err.request) {
+        alert("No response received from backend server.");
+      } else {
+        alert("Error: " + err.message);
+      }
     }
-
-    const processedItems = items.map((item) => ({
-      item_name: item.item_name || "",
-      quantity: Number(item.quantity) || 0,
-      unit: item.unit || "pcs",
-      unit_price: Number(item.unit_price) || 0,
-      vat_rate: Number(item.vat_rate) || 0
-    }));
-
-    formData.append("items", JSON.stringify(processedItems));
-
-    // 🔥 VERY IMPORTANT FIX:
-    // Some backends expect total_amount
-    formData.append("total_amount", grandTotal);
-
-    let res;
-
-    if (editingExpense) {
-      // 🔥 FIX: Support both id and _id (MongoDB safe)
-      const expenseId = editingExpense._id || editingExpense.id;
-      res = await updateExpense(expenseId, formData);
-    } else {
-      res = await createExpense(formData);
-      console.log("Sending Data:", data);
-    }
-
-    console.log("SUCCESS RESPONSE:", res);
-
-    if (onSubmit) onSubmit(res);
-    if (clearEdit) clearEdit();
-
-  } catch (err) {
-    console.error("FULL ERROR OBJECT:", err);
-
-    if (err.response) {
-      console.error("Backend Response Data:", err.response.data);
-      console.error("Status Code:", err.response.status);
-
-      alert(
-        err.response.data?.detail ||
-        err.response.data?.message ||
-        JSON.stringify(err.response.data)
-      );
-
-    } else if (err.request) {
-      alert("No response received from backend server.");
-    } else {
-      alert("Error: " + err.message);
-    }
-  }
-};
+  };
 
   return (
     <div style={containerStyle}>
@@ -125,8 +130,12 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         </div>
 
         <div style={rowGrid}>
-          <FormField label="Date *"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} required /></FormField>
-          <FormField label="Description *"><input type="text" value={description} onChange={e => setDescription(e.target.value)} style={inputStyle} required /></FormField>
+          <FormField label="Date *">
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} required />
+          </FormField>
+          <FormField label="Description *">
+            <input type="text" value={description} onChange={e => setDescription(e.target.value)} style={inputStyle} required />
+          </FormField>
         </div>
 
         <div style={rowGrid}>
@@ -156,10 +165,32 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
           {items.map((item) => (
             <div key={item.id} style={tableGridRow}>
-              <input style={inputStyle} value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} required placeholder="Item" />
-              <input type="number" style={inputStyle} value={item.quantity} onChange={e => handleItemChange(item.id, "quantity", e.target.value)} />
-              <input type="text" style={inputStyle} value={item.unit} onChange={e => handleItemChange(item.id, "unit", e.target.value)} required />
-              <input type="number" style={inputStyle} value={item.unit_price} onChange={e => handleItemChange(item.id, "unit_price", e.target.value)} />
+              <input
+                style={inputStyle}
+                value={item.item_name}
+                onChange={e => handleItemChange(item.id, "item_name", e.target.value)}
+                required
+                placeholder="Item"
+              />
+              <input
+                type="number"
+                style={inputStyle}
+                value={item.quantity}
+                onChange={e => handleItemChange(item.id, "quantity", e.target.value)}
+              />
+              <input
+                type="text"
+                style={inputStyle}
+                value={item.unit}
+                onChange={e => handleItemChange(item.id, "unit", e.target.value)}
+                required
+              />
+              <input
+                type="number"
+                style={inputStyle}
+                value={item.unit_price}
+                onChange={e => handleItemChange(item.id, "unit_price", e.target.value)}
+              />
               <input
                 type="number"
                 style={{...inputStyle, background: '#f0f9ff', borderColor: '#bae6fd'}}
@@ -179,10 +210,10 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
           </FormField>
           <FormField label="Remarks">
             <textarea
-                value={remarks}
-                onChange={e => setRemarks(e.target.value)}
-                style={{...inputStyle, height: '42px', resize: 'none'}}
-                placeholder="Any extra details..."
+              value={remarks}
+              onChange={e => setRemarks(e.target.value)}
+              style={{...inputStyle, height: '42px', resize: 'none'}}
+              placeholder="Any extra details..."
             />
           </FormField>
         </div>
@@ -211,8 +242,14 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   );
 }
 
-// RESTORED STYLES
-const FormField = ({ label, children }) => ( <div style={{width: '100%'}}><label style={labelStyle}>{label}</label>{children}</div> );
+// ====================== STYLES ======================
+const FormField = ({ label, children }) => (
+  <div style={{ width: '100%' }}>
+    <label style={labelStyle}>{label}</label>
+    {children}
+  </div>
+);
+
 const containerStyle = { background: "#fff", padding: 30, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: 950, margin: "auto" };
 const inputStyle = { width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" };
 const rowGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 25 };
@@ -227,7 +264,11 @@ const sectionLabel = { fontSize: 12, fontWeight: 700, textTransform: "uppercase"
 const summaryBox = { background: "#f8fafc", padding: 20, borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 25 };
 const totalLine = { fontSize: 18, fontWeight: 800, color: "#2563eb", display: "flex", justifyContent: "space-between" };
 const paymentRow = { display: "flex", gap: 10, marginBottom: 20 };
-const radioCard = (active) => ({ flex: 1, padding: 12, textAlign: "center", borderRadius: 8, cursor: "pointer", fontWeight: 600, border: active ? "2px solid #2563eb" : "1px solid #e2e8f0", background: active ? "#eff6ff" : "#fff" });
+const radioCard = (active) => ({
+  flex: 1, padding: 12, textAlign: "center", borderRadius: 8, cursor: "pointer", fontWeight: 600,
+  border: active ? "2px solid #2563eb" : "1px solid #e2e8f0",
+  background: active ? "#eff6ff" : "#fff"
+});
 const cancelBtn = { flex: 1, padding: 12, borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", fontWeight: 600, cursor: "pointer" };
 const submitBtn = { flex: 2, padding: 12, borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, cursor: "pointer" };
 const tableGridHeader = { display: "grid", gridTemplateColumns: "2.2fr 0.6fr 0.7fr 1.2fr 0.8fr 1.2fr 40px", gap: 10, fontSize: 11, fontWeight: 800, color: "#94a3b8" };
