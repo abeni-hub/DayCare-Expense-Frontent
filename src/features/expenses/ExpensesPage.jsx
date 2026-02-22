@@ -8,29 +8,34 @@ function ExpensesPage() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadExpenses();
-  }, []);
-
+  // Load expenses when page loads OR when you come back from another page
   const loadExpenses = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const data = await getExpenses();
+      console.log("✅ API Response (Expenses):", data);   // ← This will show your data
       setExpenses(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error("❌ Fetch error:", err);
+      setError("Failed to load expenses. Please check server.");
       setExpenses([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Run on first load + every time component mounts (after navigation back)
+  useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  // After successful create or update → refresh the list from server
   const handleFormSubmit = (savedData) => {
-    if (editingExpense) {
-      setExpenses(prev => prev.map(e => e.id === savedData.id ? savedData : e));
-    } else {
-      setExpenses(prev => [savedData, ...prev]);
-    }
+    console.log("✅ Form submitted successfully:", savedData);
+    loadExpenses();                    // ← THIS IS THE IMPORTANT FIX
     setEditingExpense(null);
     setIsAdding(false);
   };
@@ -39,14 +44,14 @@ function ExpensesPage() {
     if (window.confirm("Delete this expense?")) {
       try {
         await deleteExpense(id);
-        setExpenses(prev => prev.filter(e => e.id !== id));
+        loadExpenses();                // refresh list after delete
       } catch (err) {
         alert("Delete failed");
       }
     }
   };
 
-  if (loading) return <div style={{padding: '20px'}}>Loading...</div>;
+  if (loading) return <div style={{ padding: '30px' }}>Loading expenses...</div>;
 
   return (
     <div style={{ padding: '20px' }}>
@@ -69,6 +74,8 @@ function ExpensesPage() {
           />
         </div>
       )}
+
+      {error && <p style={{ color: "red", padding: "10px" }}>{error}</p>}
 
       <ExpenseList
         expenses={expenses}
