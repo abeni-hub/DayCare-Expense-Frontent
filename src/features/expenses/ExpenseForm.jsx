@@ -10,6 +10,10 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const [remarks, setRemarks] = useState("");
   const [invoiceFile, setInvoiceFile] = useState(null);
 
+  // Combined Payment Fields
+  const [cashAmount, setCashAmount] = useState(0);
+  const [bankAmount, setBankAmount] = useState(0);
+
   const [items, setItems] = useState([
     { id: Date.now(), item_name: "", quantity: 1, unit: "pcs", unit_price: 0, vat_rate: 0 }
   ]);
@@ -22,6 +26,8 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       setSupplier(editingExpense.supplier || "");
       setPaymentSource(editingExpense.payment_source || "cash");
       setRemarks(editingExpense.remarks || "");
+      setCashAmount(editingExpense.amount_cash || 0);
+      setBankAmount(editingExpense.amount_bank || 0);
 
       if (editingExpense.items) {
         setItems(editingExpense.items.map(i => ({
@@ -59,6 +65,15 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Combined Validation
+    if (paymentSource === "combined") {
+      const totalSplit = Number(cashAmount) + Number(bankAmount);
+      if (Math.abs(totalSplit - grandTotal) > 0.01) {
+        alert(`Cash + Bank must equal Grand Total (${grandTotal.toLocaleString()} ETB)`);
+        return;
+      }
+    }
+
     try {
       const formData = new FormData();
 
@@ -83,8 +98,13 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
       formData.append("items_input", JSON.stringify(processedItems));
 
-      let res;
+      // Send Combined Amounts
+      if (paymentSource === "combined") {
+        formData.append("amount_cash", cashAmount);
+        formData.append("amount_bank", bankAmount);
+      }
 
+      let res;
       if (editingExpense) {
         const expenseId = editingExpense._id || editingExpense.id;
         res = await updateExpense(expenseId, formData);
@@ -94,24 +114,17 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       }
 
       console.log("✅ SUCCESS RESPONSE:", res);
-
       if (onSubmit) onSubmit(res);
       if (clearEdit) clearEdit();
 
     } catch (err) {
       console.error("FULL ERROR OBJECT:", err);
-
       if (err.response) {
-        console.error("Backend Response Data:", err.response.data);
-        console.error("Status Code:", err.response.status);
-
         alert(
           err.response.data?.detail ||
           err.response.data?.message ||
           JSON.stringify(err.response.data)
         );
-      } else if (err.request) {
-        alert("No response received from backend server.");
       } else {
         alert("Error: " + err.message);
       }
@@ -127,12 +140,8 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         </div>
 
         <div style={rowGrid}>
-          <FormField label="Date *">
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} required />
-          </FormField>
-          <FormField label="Description *">
-            <input type="text" value={description} onChange={e => setDescription(e.target.value)} style={inputStyle} required />
-          </FormField>
+          <FormField label="Date *"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} required /></FormField>
+          <FormField label="Description *"><input type="text" value={description} onChange={e => setDescription(e.target.value)} style={inputStyle} required /></FormField>
         </div>
 
         <div style={rowGrid}>
@@ -162,39 +171,11 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
           {items.map((item) => (
             <div key={item.id} style={tableGridRow}>
-              <input
-                style={inputStyle}
-                value={item.item_name}
-                onChange={e => handleItemChange(item.id, "item_name", e.target.value)}
-                required
-                placeholder="Item"
-              />
-              <input
-                type="number"
-                style={inputStyle}
-                value={item.quantity}
-                onChange={e => handleItemChange(item.id, "quantity", e.target.value)}
-              />
-              <input
-                type="text"
-                style={inputStyle}
-                value={item.unit}
-                onChange={e => handleItemChange(item.id, "unit", e.target.value)}
-                required
-              />
-              <input
-                type="number"
-                style={inputStyle}
-                value={item.unit_price}
-                onChange={e => handleItemChange(item.id, "unit_price", e.target.value)}
-              />
-              <input
-                type="number"
-                style={{...inputStyle, background: '#f0f9ff', borderColor: '#bae6fd'}}
-                value={item.vat_rate}
-                onChange={e => handleItemChange(item.id, "vat_rate", e.target.value)}
-                placeholder="0"
-              />
+              <input style={inputStyle} value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} required placeholder="Item" />
+              <input type="number" style={inputStyle} value={item.quantity} onChange={e => handleItemChange(item.id, "quantity", e.target.value)} />
+              <input type="text" style={inputStyle} value={item.unit} onChange={e => handleItemChange(item.id, "unit", e.target.value)} required />
+              <input type="number" style={inputStyle} value={item.unit_price} onChange={e => handleItemChange(item.id, "unit_price", e.target.value)} />
+              <input type="number" style={{...inputStyle, background: '#f0f9ff', borderColor: '#bae6fd'}} value={item.vat_rate} onChange={e => handleItemChange(item.id, "vat_rate", e.target.value)} placeholder="0" />
               <div style={totalCell}>{calculateRowTotal(item).toLocaleString()}</div>
               <button type="button" onClick={() => removeItem(item.id)} style={deleteBtn}>🗑</button>
             </div>
@@ -206,12 +187,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
             <input type="file" onChange={e => setInvoiceFile(e.target.files[0])} style={inputStyle} accept="image/*,.pdf" />
           </FormField>
           <FormField label="Remarks">
-            <textarea
-              value={remarks}
-              onChange={e => setRemarks(e.target.value)}
-              style={{...inputStyle, height: '42px', resize: 'none'}}
-              placeholder="Any extra details..."
-            />
+            <textarea value={remarks} onChange={e => setRemarks(e.target.value)} style={{...inputStyle, height: '42px', resize: 'none'}} placeholder="Any extra details..." />
           </FormField>
         </div>
 
@@ -219,21 +195,33 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
           <div style={totalLine}>Grand Total (Inc. VAT): <span>{grandTotal.toLocaleString()} ETB</span></div>
         </div>
 
+        {/* PAYMENT SECTION WITH COMBINED SUPPORT */}
         <FormField label="Payment Account">
-  <div style={paymentRow}>
-    {["cash", "bank", "combined"].map(s => (
-      <label key={s} style={radioCard(paymentSource === s)}>
-        <input
-          type="radio"
-          checked={paymentSource === s}
-          onChange={() => setPaymentSource(s)}
-          hidden
-        />
-        {s === "combined" ? "BOTH / COMBINED" : s.toUpperCase()}
-      </label>
-    ))}
-  </div>
-</FormField>
+          <div style={paymentRow}>
+            {["cash", "bank", "combined"].map(s => (
+              <label key={s} style={radioCard(paymentSource === s)}>
+                <input type="radio" checked={paymentSource === s} onChange={() => setPaymentSource(s)} hidden />
+                {s === "combined" ? "BOTH / COMBINED" : s.toUpperCase()}
+              </label>
+            ))}
+          </div>
+
+          {paymentSource === "combined" && (
+            <div style={{ marginTop: 15, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
+              <div>
+                <label style={labelStyle}>Amount from Cash (ETB)</label>
+                <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value))} style={inputStyle} step="0.01" />
+              </div>
+              <div>
+                <label style={labelStyle}>Amount from Bank (ETB)</label>
+                <input type="number" value={bankAmount} onChange={e => setBankAmount(Number(e.target.value))} style={inputStyle} step="0.01" />
+              </div>
+              <div style={{ gridColumn: "1 / -1", color: "#dc2626", fontSize: "13px" }}>
+                {Number(cashAmount) + Number(bankAmount) !== grandTotal && `Must equal Grand Total (${grandTotal.toLocaleString()} ETB)`}
+              </div>
+            </div>
+          )}
+        </FormField>
 
         <div style={{ display: "flex", gap: 15 }}>
           <button type="button" onClick={clearEdit} style={cancelBtn}>Cancel</button>
@@ -265,12 +253,8 @@ const deleteBtn = { border: "none", background: "none", cursor: "pointer", color
 const sectionLabel = { fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "#475569" };
 const summaryBox = { background: "#f8fafc", padding: 20, borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 25 };
 const totalLine = { fontSize: 18, fontWeight: 800, color: "#2563eb", display: "flex", justifyContent: "space-between" };
-const paymentRow = { display: "flex", gap: 10, marginBottom: 20 };
-const radioCard = (active) => ({
-  flex: 1, padding: 12, textAlign: "center", borderRadius: 8, cursor: "pointer", fontWeight: 600,
-  border: active ? "2px solid #2563eb" : "1px solid #e2e8f0",
-  background: active ? "#eff6ff" : "#fff"
-});
+const paymentRow = { display: "flex", gap: 10, marginBottom: 15 };
+const radioCard = (active) => ({ flex: 1, padding: 12, textAlign: "center", borderRadius: 8, cursor: "pointer", fontWeight: 600, border: active ? "2px solid #2563eb" : "1px solid #e2e8f0", background: active ? "#eff6ff" : "#fff" });
 const cancelBtn = { flex: 1, padding: 12, borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", fontWeight: 600, cursor: "pointer" };
 const submitBtn = { flex: 2, padding: 12, borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, cursor: "pointer" };
 const tableGridHeader = { display: "grid", gridTemplateColumns: "2.2fr 0.6fr 0.7fr 1.2fr 0.8fr 1.2fr 40px", gap: 10, fontSize: 11, fontWeight: 800, color: "#94a3b8" };
