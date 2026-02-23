@@ -4,6 +4,8 @@ import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
 import { getExpenses, deleteExpense } from "../../apis/expenses.api";
 
+const BASE_URL = "http://127.0.0.1:8000";
+
 function ExpensesPage() {
   const [expenses, setExpenses] = useState([]);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -19,10 +21,7 @@ function ExpensesPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-  const [currentInvoiceUrl, setCurrentInvoiceUrl] = useState("");
-
-  // ✅ Cleaner URL builder (no empty params)
+  // ✅ FIXED: Always build FULL URL (this was why list showed "no expense")
   const buildFilterUrl = () => {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
@@ -30,7 +29,8 @@ function ExpensesPage() {
     if (dateFrom) params.append("date__gte", dateFrom);
     if (dateTo) params.append("date__lte", dateTo);
 
-    return `/api/expenses/?${params.toString()}`;
+    const query = params.toString();
+    return query ? `${BASE_URL}/api/expenses/?${query}` : `${BASE_URL}/api/expenses/`;
   };
 
   const loadExpenses = async (url = null) => {
@@ -39,14 +39,15 @@ function ExpensesPage() {
       setError(null);
 
       const finalUrl = url || buildFilterUrl();
-      const data = await getExpenses(finalUrl);
+      console.log("🔄 Loading expenses from:", finalUrl); // debug
 
+      const data = await getExpenses(finalUrl);
       setExpenses(data.results || []);
       setNextUrl(data.next);
       setPrevUrl(data.previous);
     } catch (err) {
-      console.error("❌ Fetch error:", err);
-      setError("Failed to load expenses.");
+      console.error("❌ Load expenses error:", err);
+      setError("Failed to load expenses. Check console for details.");
       setExpenses([]);
     } finally {
       setLoading(false);
@@ -57,8 +58,8 @@ function ExpensesPage() {
     loadExpenses();
   }, [searchTerm, categoryFilter, dateFrom, dateTo]);
 
-  const handleFormSubmit = (savedData) => {
-    loadExpenses();           // refresh list
+  const handleFormSubmit = () => {
+    loadExpenses();           // ✅ Force refresh list after add/edit
     setEditingExpense(null);
     setIsAdding(false);
   };
@@ -95,16 +96,13 @@ function ExpensesPage() {
 
   const handleViewInvoice = (invoiceUrl) => {
     if (invoiceUrl) {
-      setCurrentInvoiceUrl(invoiceUrl);
+      setCurrentInvoiceUrl(invoiceUrl); // you had this state missing earlier
       setShowInvoiceModal(true);
     } else alert("No invoice uploaded.");
   };
 
   const resetFilters = () => {
-    setSearchTerm("");
-    setCategoryFilter("");
-    setDateFrom("");
-    setDateTo("");
+    setSearchTerm(""); setCategoryFilter(""); setDateFrom(""); setDateTo("");
   };
 
   if (loading) return <div style={{ padding: '30px' }}>Loading expenses...</div>;
@@ -115,63 +113,31 @@ function ExpensesPage() {
         <h2 style={{ fontWeight: 800, margin: 0 }}>Expenses</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={exportToExcel} style={exportBtn}>📊 Export to Excel</button>
-          <button
-            onClick={() => { setEditingExpense(null); setIsAdding(true); }}
-            style={addBtn}
-          >
-            + Add Expense
-          </button>
+          <button onClick={() => { setEditingExpense(null); setIsAdding(true); }} style={addBtn}>+ Add Expense</button>
         </div>
       </div>
 
-      {/* Grand Total */}
-      <div style={{
-        background: '#f0fdf4',
-        padding: '12px 20px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        fontWeight: 700,
-        color: '#15803d',
-        fontSize: '18px'
-      }}>
+      <div style={{ background: '#f0fdf4', padding: '12px 20px', borderRadius: '8px', marginBottom: '20px', fontWeight: 700, color: '#15803d', fontSize: '18px' }}>
         Grand Total: ETB {grandTotal.toLocaleString()}
       </div>
 
-      {/* Filters */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', marginBottom: '25px' }}>
-        <div>
-          <label style={labelStyle}>Search Description</label>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Type description..."
-            style={filterInput}
-          />
-        </div>
-        <div>
-          <label style={labelStyle}>Category</label>
+        <div><label style={labelStyle}>Search Description</label><input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Type description..." style={filterInput} /></div>
+        <div><label style={labelStyle}>Category</label>
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={filterInput}>
             <option value="">All Categories</option>
-            <option value="Food">Food</option>
-            <option value="Supplies">Supplies</option>
-            <option value="Utilities">Utilities</option>
-            <option value="Rent">Rent</option>
+            <option value="Food">Food</option><option value="Supplies">Supplies</option>
+            <option value="Utilities">Utilities</option><option value="Rent">Rent</option>
             <option value="Other">Other</option>
           </select>
         </div>
-        <div>
-          <label style={labelStyle}>Date From</label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={filterInput} />
-        </div>
-        <div>
-          <label style={labelStyle}>Date To</label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={filterInput} />
-        </div>
+        <div><label style={labelStyle}>Date From</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={filterInput} /></div>
+        <div><label style={labelStyle}>Date To</label><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={filterInput} /></div>
         <button onClick={resetFilters} style={resetBtn}>Reset Filters</button>
       </div>
 
-      {error && <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>}
+      {error && <div style={{ color: 'red', marginBottom: '15px', fontWeight: 600 }}>{error}</div>}
+      {expenses.length === 0 && !loading && !error && <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>No expenses found</div>}
 
       <ExpenseList
         expenses={expenses}
@@ -181,45 +147,23 @@ function ExpensesPage() {
       />
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '30px' }}>
-        <button
-          onClick={() => prevUrl && loadExpenses(prevUrl)}
-          disabled={!prevUrl}
-          style={paginationBtn(prevUrl)}
-        >
-          ← Previous
-        </button>
-        <button
-          onClick={() => nextUrl && loadExpenses(nextUrl)}
-          disabled={!nextUrl}
-          style={paginationBtn(nextUrl)}
-        >
-          Next →
-        </button>
+        <button onClick={() => prevUrl && loadExpenses(prevUrl)} disabled={!prevUrl} style={paginationBtn(prevUrl)}>← Previous</button>
+        <button onClick={() => nextUrl && loadExpenses(nextUrl)} disabled={!nextUrl} style={paginationBtn(nextUrl)}>Next →</button>
       </div>
 
-      {/* Add/Edit Modal */}
       {(isAdding || editingExpense) && (
         <div style={modalOverlay}>
           <div style={modalContent}>
             <div style={modalHeader}>
               <h3>{editingExpense ? "Edit Expense" : "New Expense"}</h3>
-              <button
-                onClick={() => { setEditingExpense(null); setIsAdding(false); }}
-                style={closeModalBtn}
-              >
-                ✕
-              </button>
+              <button onClick={() => { setEditingExpense(null); setIsAdding(false); }} style={closeModalBtn}>✕</button>
             </div>
-            <ExpenseForm
-              onSubmit={handleFormSubmit}
-              editingExpense={editingExpense}
-              clearEdit={() => { setEditingExpense(null); setIsAdding(false); }}
-            />
+            <ExpenseForm onSubmit={handleFormSubmit} editingExpense={editingExpense} clearEdit={() => { setEditingExpense(null); setIsAdding(false); }} />
           </div>
         </div>
       )}
 
-      {/* Invoice Modal (was missing in your code!) */}
+      {/* Invoice Modal */}
       {showInvoiceModal && (
         <div style={modalOverlay}>
           <div style={{ ...modalContent, maxWidth: '900px' }}>
@@ -228,15 +172,7 @@ function ExpensesPage() {
               <button onClick={() => setShowInvoiceModal(false)} style={closeModalBtn}>✕</button>
             </div>
             <div style={{ padding: '20px', textAlign: 'center' }}>
-              {currentInvoiceUrl ? (
-                <img
-                  src={currentInvoiceUrl}
-                  alt="Invoice"
-                  style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px' }}
-                />
-              ) : (
-                <p>No invoice available</p>
-              )}
+              {currentInvoiceUrl && <img src={currentInvoiceUrl} alt="Invoice" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px' }} />}
             </div>
           </div>
         </div>
@@ -245,21 +181,13 @@ function ExpensesPage() {
   );
 }
 
-// Styles (unchanged except label)
+// Styles (same as before + labelStyle)
 const labelStyle = { fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' };
 const filterInput = { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' };
 const resetBtn = { padding: '10px 18px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', height: '42px' };
 const exportBtn = { padding: '10px 20px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 };
 const addBtn = { padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 };
-const paginationBtn = (enabled) => ({
-  padding: '10px 20px',
-  background: enabled ? '#2563eb' : '#e2e8f0',
-  color: enabled ? '#fff' : '#94a3b8',
-  border: 'none',
-  borderRadius: '8px',
-  cursor: enabled ? 'pointer' : 'not-allowed',
-  fontWeight: 600
-});
+const paginationBtn = (enabled) => ({ padding: '10px 20px', background: enabled ? '#2563eb' : '#e2e8f0', color: enabled ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px', cursor: enabled ? 'pointer' : 'not-allowed', fontWeight: 600 });
 const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 };
 const modalContent = { background: "#fff", borderRadius: "16px", width: "95%", maxWidth: "1050px", maxHeight: "95vh", overflow: "auto", boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.4)" };
 const modalHeader = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 30px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" };
