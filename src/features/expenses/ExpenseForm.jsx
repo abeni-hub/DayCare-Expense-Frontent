@@ -220,15 +220,20 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         </div>
 
         <FormField label="Payment Account">
-          <div style={paymentRow}>
-            {["cash", "bank"].map(s => (
-              <label key={s} style={radioCard(paymentSource === s)}>
-                <input type="radio" checked={paymentSource === s} onChange={() => setPaymentSource(s)} hidden />
-                {s.toUpperCase()}
-              </label>
-            ))}
-          </div>
-        </FormField>
+  <div style={paymentRow}>
+    {["cash", "bank", "combined"].map(s => (
+      <label key={s} style={radioCard(paymentSource === s)}>
+        <input
+          type="radio"
+          checked={paymentSource === s}
+          onChange={() => setPaymentSource(s)}
+          hidden
+        />
+        {s === "combined" ? "BOTH / COMBINED" : s.toUpperCase()}
+      </label>
+    ))}
+  </div>
+</FormField>
 
         <div style={{ display: "flex", gap: 15 }}>
           <button type="button" onClick={clearEdit} style={cancelBtn}>Cancel</button>
