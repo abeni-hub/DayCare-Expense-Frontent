@@ -10,7 +10,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const [remarks, setRemarks] = useState("");
   const [invoiceFile, setInvoiceFile] = useState(null);
 
-  // Combined Payment Fields
+  // Combined fields
   const [cashAmount, setCashAmount] = useState(0);
   const [bankAmount, setBankAmount] = useState(0);
 
@@ -49,23 +49,15 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   const grandTotal = items.reduce((sum, item) => sum + calculateRowTotal(item), 0);
 
   const handleItemChange = (id, field, value) => {
-    setItems(items.map((item) =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
-  const addItem = () => setItems([
-    ...items,
-    { id: Date.now(), item_name: "", quantity: 1, unit: "pcs", unit_price: 0, vat_rate: 0 }
-  ]);
-
-  const removeItem = (id) =>
-    items.length > 1 && setItems(items.filter((item) => item.id !== id));
+  const addItem = () => setItems([...items, { id: Date.now(), item_name: "", quantity: 1, unit: "pcs", unit_price: 0, vat_rate: 0 }]);
+  const removeItem = (id) => items.length > 1 && setItems(items.filter(item => item.id !== id));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Combined Validation
     if (paymentSource === "combined") {
       const totalSplit = Number(cashAmount) + Number(bankAmount);
       if (Math.abs(totalSplit - grandTotal) > 0.01) {
@@ -76,7 +68,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
     try {
       const formData = new FormData();
-
       formData.append("date", date);
       formData.append("description", description);
       formData.append("category", category);
@@ -84,11 +75,9 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       formData.append("payment_source", paymentSource);
       formData.append("remarks", remarks || "");
 
-      if (invoiceFile) {
-        formData.append("invoice", invoiceFile);
-      }
+      if (invoiceFile) formData.append("invoice", invoiceFile);
 
-      const processedItems = items.map((item) => ({
+      const processedItems = items.map(item => ({
         item_name: item.item_name || "",
         quantity: Number(item.quantity) || 0,
         unit: item.unit || "pcs",
@@ -98,7 +87,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
       formData.append("items_input", JSON.stringify(processedItems));
 
-      // Send Combined Amounts
       if (paymentSource === "combined") {
         formData.append("amount_cash", cashAmount);
         formData.append("amount_bank", bankAmount);
@@ -110,7 +98,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         res = await updateExpense(expenseId, formData);
       } else {
         res = await createExpense(formData);
-        console.log("✅ Sending processedItems:", processedItems);
       }
 
       console.log("✅ SUCCESS RESPONSE:", res);
@@ -119,15 +106,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
     } catch (err) {
       console.error("FULL ERROR OBJECT:", err);
-      if (err.response) {
-        alert(
-          err.response.data?.detail ||
-          err.response.data?.message ||
-          JSON.stringify(err.response.data)
-        );
-      } else {
-        alert("Error: " + err.message);
-      }
+      alert(err.response?.data?.detail || "Error saving expense");
     }
   };
 
@@ -164,11 +143,9 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
             <span style={sectionLabel}>Items & Taxation</span>
             <button type="button" onClick={addItem} style={addItemBtn}>+ Add Item</button>
           </div>
-
           <div style={tableGridHeader}>
             <span>Item Name</span><span>Qty</span><span>Unit</span><span>Price</span><span>VAT %</span><span style={{textAlign: 'right'}}>Total</span><span></span>
           </div>
-
           {items.map((item) => (
             <div key={item.id} style={tableGridRow}>
               <input style={inputStyle} value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} required placeholder="Item" />
@@ -195,7 +172,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
           <div style={totalLine}>Grand Total (Inc. VAT): <span>{grandTotal.toLocaleString()} ETB</span></div>
         </div>
 
-        {/* PAYMENT SECTION WITH COMBINED SUPPORT */}
         <FormField label="Payment Account">
           <div style={paymentRow}>
             {["cash", "bank", "combined"].map(s => (
@@ -209,15 +185,12 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
           {paymentSource === "combined" && (
             <div style={{ marginTop: 15, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
               <div>
-                <label style={labelStyle}>Amount from Cash (ETB)</label>
+                <label style={labelStyle}>Cash Amount (ETB)</label>
                 <input type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value))} style={inputStyle} step="0.01" />
               </div>
               <div>
-                <label style={labelStyle}>Amount from Bank (ETB)</label>
+                <label style={labelStyle}>Bank Amount (ETB)</label>
                 <input type="number" value={bankAmount} onChange={e => setBankAmount(Number(e.target.value))} style={inputStyle} step="0.01" />
-              </div>
-              <div style={{ gridColumn: "1 / -1", color: "#dc2626", fontSize: "13px" }}>
-                {Number(cashAmount) + Number(bankAmount) !== grandTotal && `Must equal Grand Total (${grandTotal.toLocaleString()} ETB)`}
               </div>
             </div>
           )}
@@ -232,14 +205,8 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   );
 }
 
-// ====================== STYLES ======================
-const FormField = ({ label, children }) => (
-  <div style={{ width: '100%' }}>
-    <label style={labelStyle}>{label}</label>
-    {children}
-  </div>
-);
-
+// STYLES (unchanged from your original)
+const FormField = ({ label, children }) => <div style={{width: '100%'}}><label style={labelStyle}>{label}</label>{children}</div>;
 const containerStyle = { background: "#fff", padding: 30, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: 950, margin: "auto" };
 const inputStyle = { width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" };
 const rowGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 25 };
