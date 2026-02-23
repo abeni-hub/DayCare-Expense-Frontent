@@ -1,6 +1,6 @@
 import React from 'react';
 
-function ExpenseList({ expenses, onDeleteExpense, onEditClick, onViewInvoice }) {
+function ExpenseList({ expenses, onDeleteExpense, onEditClick }) {
   const safeExpenses = Array.isArray(expenses) ? expenses : [];
 
   const totalAmount = safeExpenses.reduce((sum, exp) => sum + Number(exp.total_expense || 0), 0);
@@ -31,16 +31,6 @@ function ExpenseList({ expenses, onDeleteExpense, onEditClick, onViewInvoice }) 
 
           <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "25px" }}>
             <div style={{ fontSize: "18px", fontWeight: "bold" }}>{Number(expense.total_expense).toLocaleString()} ETB</div>
-
-            {/* Invoice Preview Button */}
-            <button
-              onClick={() => onViewInvoice(expense.invoice)}
-              style={invoiceBtn}
-              title="View Invoice"
-            >
-              👁️
-            </button>
-
             <div style={{ display: "flex", gap: "8px" }}>
               <button onClick={() => onEditClick(expense)} style={actionBtn}>Edit</button>
               <button onClick={() => onDeleteExpense(expense.id)} style={deleteBtnStyle}>Delete</button>
@@ -56,6 +46,5 @@ const cardStyle = { background: "#fff", borderRadius: "12px", padding: "20px", m
 const actionBtn = { padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer" };
 const deleteBtnStyle = { padding: "6px 12px", borderRadius: "6px", border: "1px solid #fee2e2", background: "#fff", color: "#dc2626", cursor: "pointer" };
 const badgeStyle = (source) => ({ fontSize: "10px", fontWeight: "bold", padding: "2px 8px", borderRadius: "12px", backgroundColor: source === "bank" ? "#eff6ff" : "#fef2f2", color: source === "bank" ? "#2563eb" : "#dc2626" });
-const invoiceBtn = { padding: "8px 12px", borderRadius: "6px", border: "1px solid #bae6fd", background: "#f0f9ff", cursor: "pointer", fontSize: "18px" };
 
 export default ExpenseList;
