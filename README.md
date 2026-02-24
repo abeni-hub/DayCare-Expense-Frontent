@@ -196,3 +196,6 @@ This frontend application provides a **robust, scalable, and user-friendly solut
 
 Account page
 ![alt text](image-1.png)
+
+Expense Page
+![alt text](image-2.png)
