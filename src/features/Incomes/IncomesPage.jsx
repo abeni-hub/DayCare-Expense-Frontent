@@ -1,90 +1,105 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import * as XLSX from 'xlsx';
 import IncomeForm from "./IncomeForm";
 import IncomeList from "./IncomeList";
+import { getIncomes, deleteIncome } from "../../apis/incomes.api";
 
-function IncomesPage({ incomes, onAddIncome, onDeleteIncome, onEditIncome }) {
+function IncomesPage() {
+  const [incomes, setIncomes] = useState([]);
   const [editingIncome, setEditingIncome] = useState(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (income) => {
-    if (editingIncome) {
-      onEditIncome(income);
-      setEditingIncome(null);
-    } else {
-      onAddIncome(income);
+  const [nextUrl, setNextUrl] = useState(null);
+  const [prevUrl, setPrevUrl] = useState(null);
+
+  const loadIncomes = async (url = null) => {
+    try {
+      setLoading(true);
+      const data = await getIncomes(url);
+      setIncomes(data.results || []);
+      setNextUrl(data.next);
+      setPrevUrl(data.previous);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load incomes");
+    } finally {
+      setLoading(false);
     }
-    setIsFormOpen(false);
   };
 
-  const handleEditClick = (income) => {
-    setEditingIncome(income);
-    setIsFormOpen(true);
+  useEffect(() => {
+    loadIncomes();
+  }, []);
+
+  const handleFormSubmit = (newIncome) => {
+    loadIncomes();
+    setEditingIncome(null);
+    setIsAdding(false);
   };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete this income?")) {
+      await deleteIncome(id);
+      loadIncomes();
+    }
+  };
+
+  const handleEdit = (income) => {
+    setEditingIncome(income);
+    setIsAdding(true);
+  };
+
+  const exportToExcel = () => {
+    const data = incomes.map(i => ({
+      Date: i.date,
+      Description: i.description,
+      Category: i.category,
+      Amount: i.amount,
+      Payment: i.payment_source,
+      "Cash Amount": i.amount_cash || 0,
+      "Bank Amount": i.amount_bank || 0,
+      Remarks: i.remarks || ""
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Income");
+    XLSX.writeFile(wb, `Income_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
+  if (loading) return <div style={{ padding: '30px' }}>Loading incomes...</div>;
 
   return (
-    <div style={{ animation: "fadeIn 0.4s ease-out" }}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "30px"
-      }}>
-        <div>
-          <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-            Income Tracking
-          </h1>
-          <p style={{ color: "#64748b", marginTop: "4px" }}>Manage student fees and other revenue sources.</p>
+    <div style={{ padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: "28px", fontWeight: "800" }}>Income Tracking</h1>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={exportToExcel} style={{ padding: '10px 20px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px' }}>📊 Export to Excel</button>
+          <button onClick={() => { setEditingIncome(null); setIsAdding(true); }} style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px' }}>+ Add Income</button>
         </div>
-
-        <button
-          onClick={() => {
-            setEditingIncome(null);
-            setIsFormOpen(!isFormOpen);
-          }}
-          style={{
-            backgroundColor: "#10b981",
-            color: "#fff",
-            border: "none",
-            padding: "12px 24px",
-            borderRadius: "10px",
-            fontWeight: "600",
-            cursor: "pointer",
-            boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.3)",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}
-        >
-          {isFormOpen ? "✕ Close" : "+ Add Income"}
-        </button>
       </div>
 
-      {isFormOpen && (
-        <div style={{
-          backgroundColor: "#fff",
-          padding: "30px",
-          borderRadius: "16px",
-          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-          border: "1px solid #f1f5f9",
-          marginBottom: "30px",
-          animation: "slideDown 0.3s ease-out"
-        }}>
+      {(isAdding || editingIncome) && (
+        <div style={{ background: "#fff", padding: "30px", borderRadius: "16px", marginBottom: "30px", border: "1px solid #e2e8f0" }}>
           <IncomeForm
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             editingIncome={editingIncome}
-            clearEdit={() => {
-              setEditingIncome(null);
-              setIsFormOpen(false);
-            }}
+            clearEdit={() => { setEditingIncome(null); setIsAdding(false); }}
           />
         </div>
       )}
 
       <IncomeList
         incomes={incomes}
-        onDeleteIncome={onDeleteIncome}
-        onEditClick={handleEditClick}
+        onDeleteIncome={handleDelete}
+        onEditClick={handleEdit}
       />
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '30px' }}>
+        <button onClick={() => prevUrl && loadIncomes(prevUrl)} disabled={!prevUrl} style={{ padding: '10px 20px', background: prevUrl ? '#2563eb' : '#e2e8f0', color: prevUrl ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px' }}>← Previous</button>
+        <button onClick={() => nextUrl && loadIncomes(nextUrl)} disabled={!nextUrl} style={{ padding: '10px 20px', background: nextUrl ? '#2563eb' : '#e2e8f0', color: nextUrl ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px' }}>Next →</button>
+      </div>
     </div>
   );
 }

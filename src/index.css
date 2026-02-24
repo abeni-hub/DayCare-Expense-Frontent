@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add this block below your tailwind directives */
+@layer base {
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    /* This prevents the "shifting" and extra white space in corners */
+    overflow-x: hidden;
+  }
+}

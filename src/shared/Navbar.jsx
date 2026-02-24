@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 function Navbar({ currentView, onViewChange }) {
   const menuItem = (view, label, icon) => {
     const isActive = currentView === view;
@@ -39,12 +37,14 @@ function Navbar({ currentView, onViewChange }) {
     <div
       style={{
         width: "260px",
-        backgroundColor: "#0f172a", // Deep Navy
+        height: "100%",           // Force it to fill the parent height
+        backgroundColor: "#0f172a",
         padding: "24px 16px",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
-        borderRight: "1px solid #1e293b"
+        borderRight: "1px solid #1e293b",
+        boxSizing: "border-box"    // Prevents the border from adding width
       }}
     >
       <div style={{ padding: "0 16px", marginBottom: "40px" }}>

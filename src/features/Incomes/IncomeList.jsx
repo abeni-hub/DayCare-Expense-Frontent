@@ -1,3 +1,5 @@
+import React from 'react';
+
 function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
   if (incomes.length === 0) {
     return (
@@ -9,23 +11,19 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <h3 style={{ fontSize: "16px", color: "#475569", marginBottom: "8px" }}>Recent Transactions</h3>
+      <h3 style={{ fontSize: "16px", color: "#475569", marginBottom: "8px" }}>Recent Income Transactions</h3>
 
       {incomes.map((income) => (
-        <div
-          key={income.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "16px 24px",
-            backgroundColor: "#fff",
-            borderRadius: "12px",
-            border: "1px solid #f1f5f9",
-            transition: "transform 0.2s",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-          }}
-        >
+        <div key={income.id} style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "16px 24px",
+          backgroundColor: "#fff",
+          borderRadius: "12px",
+          border: "1px solid #f1f5f9",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div style={{
               width: "40px",
@@ -41,19 +39,9 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
               ↓
             </div>
             <div>
-              <div style={{ fontWeight: "700", color: "#1e293b" }}>{income.title}</div>
-              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
-                <span style={{
-                  backgroundColor: "#f1f5f9",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  marginRight: "8px",
-                  color: "#475569",
-                  fontWeight: "600"
-                }}>
-                  {income.account.toUpperCase()}
-                </span>
-                {income.date}
+              <div style={{ fontWeight: "700", color: "#1e293b" }}>{income.description}</div>
+              <div style={{ fontSize: "12px", color: "#94a3b8" }}>
+                {income.date} • <span style={{ color: "#10b981", fontWeight: "600" }}>{income.category}</span>
               </div>
             </div>
           </div>
@@ -61,23 +49,18 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontWeight: "800", color: "#10b981", fontSize: "18px" }}>
-                + {income.amount.toLocaleString()} <span style={{ fontSize: "12px" }}>ETB</span>
+                + {Number(income.amount).toLocaleString()} ETB
               </div>
+              {income.payment_source === "combined" && (
+                <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  Cash: {income.amount_cash} | Bank: {income.amount_bank}
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={() => onEditClick(income)}
-                style={actionButtonStyle}
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDeleteIncome(income.id)}
-                style={{ ...actionButtonStyle, color: "#ef4444" }}
-              >
-                Delete
-              </button>
+              <button onClick={() => onEditClick(income)} style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer" }}>Edit</button>
+              <button onClick={() => onDeleteIncome(income.id)} style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #fee2e2", background: "#fff", color: "#dc2626", cursor: "pointer" }}>Delete</button>
             </div>
           </div>
         </div>
@@ -85,15 +68,5 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
     </div>
   );
 }
-
-const actionButtonStyle = {
-  background: "none",
-  border: "none",
-  color: "#3b82f6",
-  fontSize: "13px",
-  fontWeight: "600",
-  cursor: "pointer",
-  padding: "4px 8px"
-};
 
 export default IncomeList;
