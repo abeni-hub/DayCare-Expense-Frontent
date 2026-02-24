@@ -193,3 +193,6 @@ This frontend application provides a **robust, scalable, and user-friendly solut
 
 📌 *Built to make DayCare expense tracking simple, transparent, and reliable.*
 ![alt text](image.png)
+
+Account page
+![alt text](image-1.png)
