@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { createExpense, updateExpense } from "../../apis/expenses.api";
 
 export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
-
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Food");
@@ -72,9 +71,8 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (paymentSource === "combined") {
-      if (Number(cashAmount) + Number(bankAmount) !== grandTotal) {
+      if (Math.abs((Number(cashAmount) + Number(bankAmount)) - grandTotal) > 0.01) {
         alert("Cash + Bank must equal Grand Total.");
         return;
       }
@@ -82,17 +80,13 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
     try {
       const formData = new FormData();
-
       formData.append("date", date);
       formData.append("description", description);
       formData.append("category", category);
       formData.append("supplier", supplier || "");
       formData.append("payment_source", paymentSource);
       formData.append("remarks", remarks || "");
-
-      if (invoiceFile) {
-        formData.append("invoice", invoiceFile);
-      }
+      if (invoiceFile) formData.append("invoice", invoiceFile);
 
       const processedItems = items.map(item => ({
         item_name: item.item_name,
@@ -101,7 +95,6 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         unit_price: Number(item.unit_price),
         vat_rate: Number(item.vat_rate)
       }));
-
       formData.append("items_input", JSON.stringify(processedItems));
 
       if (paymentSource === "combined") {
@@ -109,116 +102,150 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         formData.append("bank_amount", bankAmount);
       }
 
-      let res;
-
-      if (editingExpense) {
-        res = await updateExpense(editingExpense.id, formData);
-      } else {
-        res = await createExpense(formData);
-      }
+      let res = editingExpense
+        ? await updateExpense(editingExpense.id, formData)
+        : await createExpense(formData);
 
       if (onSubmit) onSubmit(res);
       if (clearEdit) clearEdit();
-
     } catch (err) {
       alert("Error submitting expense.");
     }
   };
 
   return (
-    <div style={pageWrapper}>
-      <form onSubmit={handleSubmit} style={card}>
-
-        <h2 style={title}>
-          {editingExpense ? "✏️ Edit Expense" : "💰 Add Expense"}
-        </h2>
-
-        {/* BASIC INFO */}
-        <div style={grid2}>
-          <Input label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-          <Input label="Description" value={description} onChange={e => setDescription(e.target.value)} />
+    <div style={styles.formContainer}>
+      <form onSubmit={handleSubmit} style={styles.modernCard}>
+        {/* HEADER */}
+        <div style={styles.headerRow}>
+          <h2 style={styles.titleText}>
+            {editingExpense ? "📝 Edit Transaction" : "💰 New Expense Voucher"}
+          </h2>
+          <div style={styles.statusBadge}>
+            Draft Mode
+          </div>
         </div>
 
-        <div style={grid2}>
-          <Select label="Category" value={category} onChange={e => setCategory(e.target.value)}>
+        {/* BASIC INFO SECTION */}
+        <div style={styles.sectionHeader}>
+          <span style={styles.sectionIcon}>📁</span>
+          General Information
+        </div>
+        <div style={styles.gridContainer}>
+          <Input label="Transaction Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+          <Input label="Expense Description" placeholder="e.g. Monthly Grocery Purchase" value={description} onChange={e => setDescription(e.target.value)} />
+
+          <Select label="Expense Category" value={category} onChange={e => setCategory(e.target.value)}>
             <option>Food</option>
             <option>Supplies</option>
             <option>Utilities</option>
             <option>Rent</option>
             <option>Other</option>
           </Select>
-          <Input label="Supplier" value={supplier} onChange={e => setSupplier(e.target.value)} />
+          <Input label="Vendor / Supplier" placeholder="Company Name" value={supplier} onChange={e => setSupplier(e.target.value)} />
         </div>
 
-        {/* ITEMS TABLE */}
-        <h3 style={sectionTitle}>Items</h3>
-
-        <div style={tableHeader}>
-          <span>Item</span>
-          <span>Qty</span>
-          <span>Unit</span>
-          <span>Unit Price</span>
-          <span>VAT %</span>
-          <span>Total</span>
-          <span></span>
+        {/* LINE ITEMS SECTION */}
+        <div style={styles.sectionHeader}>
+          <span style={styles.sectionIcon}>📋</span>
+          Itemized Breakdown
         </div>
 
-        {items.map(item => (
-          <div key={item.id} style={tableRow}>
-            <input style={tableInput} value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} />
-            <input type="number" style={tableInput} value={item.quantity} onChange={e => handleItemChange(item.id, "quantity", e.target.value)} />
-            <input style={tableInput} value={item.unit} onChange={e => handleItemChange(item.id, "unit", e.target.value)} />
-            <input type="number" style={tableInput} value={item.unit_price} onChange={e => handleItemChange(item.id, "unit_price", e.target.value)} />
-            <input type="number" style={tableInput} value={item.vat_rate} onChange={e => handleItemChange(item.id, "vat_rate", e.target.value)} />
-            <span style={totalCell}>{calculateRowTotal(item).toFixed(2)}</span>
-            <button type="button" style={deleteBtn} onClick={() => removeItem(item.id)}>✖</button>
-          </div>
-        ))}
-
-        <button type="button" style={addBtn} onClick={addItem}>+ Add Item</button>
-
-        <div style={grandTotalBox}>
-          Grand Total: {grandTotal.toFixed(2)} ETB
-        </div>
-
-        {/* PAYMENT */}
-        <h3 style={sectionTitle}>Payment Method</h3>
-
-        <div style={paymentCards}>
-          {["cash", "bank", "combined"].map(s => (
-            <div
-              key={s}
-              style={{
-                ...paymentCard,
-                border: paymentSource === s ? "2px solid #2563eb" : "1px solid #ddd",
-                background: paymentSource === s ? "#eff6ff" : "#fff"
-              }}
-              onClick={() => setPaymentSource(s)}
-            >
-              {s.toUpperCase()}
+        <div style={styles.tableWrapper}>
+            <div style={styles.tableHeaderRow}>
+                <div style={{ flex: 2.5 }}>Item Name</div>
+                <div style={{ flex: 1 }}>Qty</div>
+                <div style={{ flex: 1 }}>Unit</div>
+                <div style={{ flex: 1.5 }}>Price (ETB)</div>
+                <div style={{ flex: 1 }}>VAT %</div>
+                <div style={{ flex: 1.5, textAlign: 'right' }}>Subtotal</div>
+                <div style={{ width: 40 }}></div>
             </div>
-          ))}
+
+            {items.map(item => (
+                <div key={item.id} style={styles.tableBodyRow}>
+                    <div style={{ flex: 2.5 }}><input style={styles.tableInput} placeholder="Item description" value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} /></div>
+                    <div style={{ flex: 1 }}><input type="number" style={styles.tableInput} value={item.quantity} onChange={e => handleItemChange(item.id, "quantity", e.target.value)} /></div>
+                    <div style={{ flex: 1 }}><input style={styles.tableInput} value={item.unit} onChange={e => handleItemChange(item.id, "unit", e.target.value)} /></div>
+                    <div style={{ flex: 1.5 }}><input type="number" style={styles.tableInput} placeholder="0.00" value={item.unit_price} onChange={e => handleItemChange(item.id, "unit_price", e.target.value)} /></div>
+                    <div style={{ flex: 1 }}><input type="number" style={styles.tableInput} value={item.vat_rate} onChange={e => handleItemChange(item.id, "vat_rate", e.target.value)} /></div>
+                    <div style={styles.totalCell}>{calculateRowTotal(item).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                    <div style={{ width: 40, textAlign: 'right' }}>
+                        <button type="button" style={styles.deleteRowBtn} onClick={() => removeItem(item.id)}>🗑️</button>
+                    </div>
+                </div>
+            ))}
         </div>
 
-        {paymentSource === "combined" && (
-          <div style={grid2}>
-            <Input label="Cash Amount" type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value))} />
-            <Input label="Bank Amount" type="number" value={bankAmount} onChange={e => setBankAmount(Number(e.target.value))} />
-          </div>
-        )}
+        <button type="button" style={styles.addRowBtn} onClick={addItem}>
+          + Add Line Item
+        </button>
 
-        <textarea
-          placeholder="Remarks..."
-          value={remarks}
-          onChange={e => setRemarks(e.target.value)}
-          style={textareaStyle}
-        />
+        {/* SETTLEMENT SECTION */}
+        <div style={styles.summarySection}>
+            <div style={styles.paymentCol}>
+                <div style={styles.sectionHeaderSmall}>Settlement Method</div>
+                <div style={styles.paymentButtonGroup}>
+                    {["cash", "bank", "combined"].map(s => (
+                        <div
+                            key={s}
+                            style={{
+                                ...styles.methodCard,
+                                borderColor: paymentSource === s ? "#2563eb" : "#e2e8f0",
+                                backgroundColor: paymentSource === s ? "#eff6ff" : "#fff",
+                                color: paymentSource === s ? "#1d4ed8" : "#64748b"
+                            }}
+                            onClick={() => setPaymentSource(s)}
+                        >
+                            <span style={{fontSize: '18px'}}>{s === 'cash' ? '💵' : s === 'bank' ? '🏦' : '⚖️'}</span>
+                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </div>
+                    ))}
+                </div>
 
-        <input type="file" onChange={e => setInvoiceFile(e.target.files[0])} />
+                {paymentSource === "combined" && (
+                    <div style={styles.splitInputRow}>
+                        <Input label="Cash Portion" type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value))} />
+                        <Input label="Bank Portion" type="number" value={bankAmount} onChange={e => setBankAmount(Number(e.target.value))} />
+                    </div>
+                )}
+            </div>
 
-        <div style={buttonRow}>
-          <button type="button" style={cancelBtn} onClick={clearEdit}>Cancel</button>
-          <button type="submit" style={submitBtn}>Save Expense</button>
+            <div style={styles.grandTotalContainer}>
+                <div style={styles.totalLabel}>Grand Total Amount</div>
+                <div style={styles.totalValue}>{grandTotal.toLocaleString()} <span style={{fontSize: '16px'}}>ETB</span></div>
+                <div style={styles.totalDivider}></div>
+                <div style={{fontSize: '12px', color: '#64748b', textAlign: 'right'}}>Incl. VAT Calculations</div>
+            </div>
+        </div>
+
+        {/* ATTACHMENTS & REMARKS */}
+        <div style={styles.gridContainer}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <label style={styles.fieldLabel}>Voucher Attachments (Invoice/Receipt)</label>
+                <div style={styles.fileUploadBox}>
+                    <input type="file" onChange={e => setInvoiceFile(e.target.files[0])} />
+                </div>
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <label style={styles.fieldLabel}>Internal Remarks</label>
+                <textarea
+                    placeholder="Add any specific notes about this transaction..."
+                    value={remarks}
+                    onChange={e => setRemarks(e.target.value)}
+                    style={styles.textArea}
+                />
+            </div>
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div style={styles.actionFooter}>
+            <button type="button" style={styles.secondaryBtn} onClick={clearEdit}>
+                Discard Changes
+            </button>
+            <button type="submit" style={styles.primaryBtn}>
+                Confirm & Sync Expense
+            </button>
         </div>
 
       </form>
@@ -226,149 +253,280 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
   );
 }
 
-/* ---------- Reusable Components ---------- */
+/* ---------- Reusable Sub-Components ---------- */
 const Input = ({ label, ...props }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-    <label style={{ fontSize: 13, fontWeight: 600 }}>{label}</label>
-    <input {...props} style={modernInput} />
+  <div style={styles.inputGroup}>
+    <label style={styles.fieldLabel}>{label}</label>
+    <input {...props} style={styles.formInput} />
   </div>
 );
 
 const Select = ({ label, children, ...props }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-    <label style={{ fontSize: 13, fontWeight: 600 }}>{label}</label>
-    <select {...props} style={modernInput}>{children}</select>
+  <div style={styles.inputGroup}>
+    <label style={styles.fieldLabel}>{label}</label>
+    <div style={styles.selectWrapper}>
+        <select {...props} style={styles.formSelect}>{children}</select>
+    </div>
   </div>
 );
 
-/* ---------- Styles ---------- */
-
-const pageWrapper = {
-  background: "#f4f6f9",
-  padding: 30,
-  minHeight: "100vh"
-};
-
-const card = {
-  background: "#fff",
-  padding: 30,
-  borderRadius: 12,
-  boxShadow: "0 8px 25px rgba(0,0,0,0.05)",
-  maxWidth: 1100,
-  margin: "auto"
-};
-
-const title = { marginBottom: 25 };
-
-const sectionTitle = { marginTop: 30, marginBottom: 10 };
-
-const grid2 = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: 20,
-  marginBottom: 20
-};
-
-const modernInput = {
-  padding: "10px 12px",
-  borderRadius: 6,
-  border: "1px solid #ccc",
-  fontSize: 14
-};
-
-const tableHeader = {
-  display: "grid",
-  gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 40px",
-  fontWeight: 600,
-  marginBottom: 8
-};
-
-const tableRow = {
-  display: "grid",
-  gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 40px",
-  gap: 8,
-  marginBottom: 8,
-  alignItems: "center"
-};
-
-const tableInput = {
-  padding: 6,
-  border: "1px solid #ccc",
-  borderRadius: 4
-};
-
-const totalCell = { fontWeight: 600 };
-
-const addBtn = {
-  marginTop: 10,
-  padding: "8px 12px",
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer"
-};
-
-const grandTotalBox = {
-  marginTop: 20,
-  padding: 15,
-  background: "#f1f5f9",
-  borderRadius: 6,
-  fontWeight: 700,
-  textAlign: "right"
-};
-
-const paymentCards = {
-  display: "flex",
-  gap: 15,
-  marginBottom: 20
-};
-
-const paymentCard = {
-  padding: 15,
-  borderRadius: 8,
-  cursor: "pointer",
-  flex: 1,
-  textAlign: "center",
-  fontWeight: 600
-};
-
-const textareaStyle = {
-  width: "100%",
-  marginTop: 15,
-  padding: 10,
-  borderRadius: 6,
-  border: "1px solid #ccc"
-};
-
-const buttonRow = {
-  display: "flex",
-  justifyContent: "flex-end",
-  gap: 10,
-  marginTop: 20
-};
-
-const submitBtn = {
-  background: "#16a34a",
-  color: "#fff",
-  padding: "10px 18px",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer"
-};
-
-const cancelBtn = {
-  background: "#ef4444",
-  color: "#fff",
-  padding: "10px 18px",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer"
-};
-
-const deleteBtn = {
-  background: "transparent",
-  border: "none",
-  cursor: "pointer",
-  fontSize: 16
+/* ---------- PROFESSIONAL UI STYLES ---------- */
+const styles = {
+  formContainer: {
+    padding: "20px 0",
+    maxWidth: "1150px",
+    margin: "0 auto",
+  },
+  modernCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: "20px",
+    padding: "40px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
+    border: "1px solid #f1f5f9"
+  },
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "40px",
+    borderBottom: "1px solid #f1f5f9",
+    paddingBottom: "20px"
+  },
+  titleText: {
+    fontSize: "24px",
+    fontWeight: "800",
+    color: "#0f172a",
+    margin: 0
+  },
+  statusBadge: {
+    backgroundColor: "#f8fafc",
+    color: "#64748b",
+    padding: "6px 14px",
+    borderRadius: "100px",
+    fontSize: "12px",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    border: "1px solid #e2e8f0"
+  },
+  sectionHeader: {
+    fontSize: "15px",
+    fontWeight: "700",
+    color: "#475569",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    letterSpacing: "0.5px"
+  },
+  sectionIcon: {
+    backgroundColor: "#f1f5f9",
+    padding: "6px",
+    borderRadius: "8px",
+    fontSize: "14px"
+  },
+  gridContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "24px",
+    marginBottom: "35px"
+  },
+  inputGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px"
+  },
+  fieldLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#64748b",
+    marginLeft: "2px"
+  },
+  formInput: {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    fontSize: "14px",
+    outline: "none",
+    transition: "border 0.2s ease",
+    backgroundColor: "#fcfcfd"
+  },
+  formSelect: {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    fontSize: "14px",
+    width: "100%",
+    backgroundColor: "#fcfcfd",
+    appearance: "none",
+    outline: "none"
+  },
+  tableWrapper: {
+    backgroundColor: "#f8fafc",
+    borderRadius: "16px",
+    padding: "20px",
+    border: "1px solid #f1f5f9",
+    marginBottom: "15px"
+  },
+  tableHeaderRow: {
+    display: "flex",
+    gap: "15px",
+    padding: "0 10px 15px 10px",
+    fontSize: "12px",
+    fontWeight: "700",
+    color: "#94a3b8",
+    textTransform: "uppercase"
+  },
+  tableBodyRow: {
+    display: "flex",
+    gap: "15px",
+    padding: "10px",
+    backgroundColor: "#ffffff",
+    borderRadius: "12px",
+    marginBottom: "10px",
+    alignItems: "center",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+  },
+  tableInput: {
+    width: "100%",
+    padding: "8px 12px",
+    border: "none",
+    fontSize: "14px",
+    outline: "none",
+    backgroundColor: "transparent"
+  },
+  totalCell: {
+    flex: 1.5,
+    textAlign: "right",
+    fontWeight: "700",
+    color: "#1e293b"
+  },
+  deleteRowBtn: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    opacity: "0.5",
+    transition: "opacity 0.2s"
+  },
+  addRowBtn: {
+    padding: "10px 20px",
+    backgroundColor: "#ffffff",
+    color: "#2563eb",
+    border: "1px dashed #2563eb",
+    borderRadius: "12px",
+    fontWeight: "600",
+    fontSize: "14px",
+    cursor: "pointer",
+    marginBottom: "40px"
+  },
+  summarySection: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "40px",
+    padding: "30px",
+    backgroundColor: "#f1f5f9",
+    borderRadius: "20px",
+    marginBottom: "35px"
+  },
+  paymentCol: {
+    flex: 1
+  },
+  sectionHeaderSmall: {
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#64748b",
+    marginBottom: "15px",
+    textTransform: "uppercase"
+  },
+  paymentButtonGroup: {
+    display: "flex",
+    gap: "12px"
+  },
+  methodCard: {
+    flex: 1,
+    padding: "16px",
+    borderRadius: "14px",
+    border: "2px solid",
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "14px",
+    fontWeight: "700",
+    transition: "all 0.2s"
+  },
+  splitInputRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "15px",
+    marginTop: "20px"
+  },
+  grandTotalContainer: {
+    textAlign: "right",
+    paddingLeft: "40px",
+    borderLeft: "2px solid #e2e8f0"
+  },
+  totalLabel: {
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#64748b",
+    marginBottom: "5px"
+  },
+  totalValue: {
+    fontSize: "36px",
+    fontWeight: "900",
+    color: "#0f172a"
+  },
+  totalDivider: {
+    height: "1px",
+    backgroundColor: "#cbd5e1",
+    margin: "10px 0 10px auto",
+    width: "150px"
+  },
+  textArea: {
+    width: "100%",
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    minHeight: "80px",
+    fontSize: "14px",
+    outline: "none",
+    backgroundColor: "#fcfcfd"
+  },
+  fileUploadBox: {
+    padding: "12px",
+    border: "2px dashed #e2e8f0",
+    borderRadius: "12px",
+    backgroundColor: "#f8fafc"
+  },
+  actionFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "15px",
+    marginTop: "20px",
+    borderTop: "1px solid #f1f5f9",
+    paddingTop: "30px"
+  },
+  primaryBtn: {
+    backgroundColor: "#0f172a",
+    color: "#fff",
+    padding: "14px 28px",
+    border: "none",
+    borderRadius: "12px",
+    fontWeight: "700",
+    fontSize: "15px",
+    cursor: "pointer",
+    boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
+  },
+  secondaryBtn: {
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
+    padding: "14px 28px",
+    border: "none",
+    borderRadius: "12px",
+    fontWeight: "700",
+    fontSize: "15px",
+    cursor: "pointer"
+  }
 };
