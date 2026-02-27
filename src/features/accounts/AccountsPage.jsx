@@ -60,7 +60,7 @@ function AccountsPage() {
           My Accounts
         </h1>
         <p style={{ color: "#64748b" }}>
-          Overview of your daycare's financial assets.
+          Overview of your daycare's finances.
         </p>
       </header>
 
@@ -110,3 +110,6 @@ function AccountsPage() {
 }
 
 export default AccountsPage;
+
+
+// Accounts Page
