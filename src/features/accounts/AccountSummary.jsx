@@ -83,3 +83,5 @@ function AccountSummary({ account, isCombined }) {
 }
 
 export default AccountSummary;
+
+// Note: The AccountSummary component is designed to be reusable and adaptable for different account types. It uses a combination of gradients, icons, and typography to create a visually appealing summary card for each account. The combined account is highlighted with a unique gradient and icon to differentiate it from individual accounts.
