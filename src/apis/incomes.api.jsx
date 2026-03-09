@@ -7,17 +7,13 @@ export const getIncomes = async (url = null) => {
   return response.data;
 };
 
-export const createIncome = async (formData) => {
-  const response = await axios.post(API_BASE, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+export const createIncome = async (data) => {
+  const response = await axios.post(API_BASE, data);
   return response.data;
 };
 
-export const updateIncome = async (id, formData) => {
-  const response = await axios.put(`${API_BASE}${id}/`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+export const updateIncome = async (id, data) => {
+  const response = await axios.put(`${API_BASE}${id}/`, data);
   return response.data;
 };
 
