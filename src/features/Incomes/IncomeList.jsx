@@ -1,16 +1,17 @@
 import React from "react";
 
-function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
-
+function IncomeList({ incomes, onDeleteIncome, onEditClick, onViewClick }) {
   if (!incomes || incomes.length === 0) {
     return (
-      <div style={{
-        textAlign: "center",
-        padding: "60px",
-        backgroundColor: "#fff",
-        borderRadius: "16px",
-        border: "1px dashed #cbd5e1"
-      }}>
+      <div
+        style={{
+          textAlign: "center",
+          padding: "60px",
+          backgroundColor: "#fff",
+          borderRadius: "16px",
+          border: "1px dashed #cbd5e1",
+        }}
+      >
         <p style={{ color: "#94a3b8", fontSize: "16px" }}>
           No income transactions recorded yet.
         </p>
@@ -20,12 +21,13 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-
-      <h3 style={{
-        fontSize: "16px",
-        color: "#475569",
-        marginBottom: "10px"
-      }}>
+      <h3
+        style={{
+          fontSize: "16px",
+          color: "#475569",
+          marginBottom: "10px",
+        }}
+      >
         Recent Income Transactions
       </h3>
 
@@ -40,110 +42,139 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
             backgroundColor: "#fff",
             borderRadius: "12px",
             border: "1px solid #f1f5f9",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+            boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
           }}
         >
-
           {/* LEFT SIDE */}
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-
-            <div style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "10px",
-              backgroundColor: "#ecfdf5",
-              color: "#10b981",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "20px"
-            }}>
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "10px",
+                backgroundColor: "#ecfdf5",
+                color: "#10b981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+              }}
+            >
               ↓
             </div>
 
             <div>
-
-              <div style={{
-                fontWeight: "700",
-                color: "#1e293b"
-              }}>
+              <div
+                style={{
+                  fontWeight: "700",
+                  color: "#1e293b",
+                }}
+              >
                 {income.description}
               </div>
 
-              <div style={{
-                fontSize: "12px",
-                color: "#94a3b8"
-              }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#94a3b8",
+                }}
+              >
                 {income.date} •{" "}
-                <span style={{
-                  color: "#10b981",
-                  fontWeight: "600"
-                }}>
-                  {income.category}
+                <span
+                  style={{
+                    color: "#10b981",
+                    fontWeight: "600",
+                    textTransform: "capitalize"
+                  }}
+                >
+                  {income.category.replace('_', ' ')}
                 </span>
               </div>
 
               {/* Payment info */}
-              <div style={{
-                fontSize: "12px",
-                color: "#64748b",
-                marginTop: "4px"
-              }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#64748b",
+                  marginTop: "4px",
+                  textTransform: "capitalize"
+                }}
+              >
                 Payment: {income.payment_source}
               </div>
 
               {/* Combined payment */}
               {income.payment_source === "combined" && (
-                <div style={{
-                  fontSize: "12px",
-                  color: "#64748b"
-                }}>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#64748b",
+                  }}
+                >
                   Cash: {income.amount_cash || 0} | Bank: {income.amount_bank || 0}
                 </div>
               )}
 
               {/* Liability */}
               {income.liability_amount > 0 && (
-                <div style={{
-                  fontSize: "12px",
-                  color: "#dc2626"
-                }}>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#dc2626",
+                  }}
+                >
                   Liability: {Number(income.liability_amount).toLocaleString()} ETB
                 </div>
               )}
 
               {/* Receivable */}
               {income.receivable_amount > 0 && (
-                <div style={{
-                  fontSize: "12px",
-                  color: "#f59e0b"
-                }}>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#f59e0b",
+                  }}
+                >
                   Receivable: {Number(income.receivable_amount).toLocaleString()} ETB
                 </div>
               )}
-
             </div>
           </div>
 
-
           {/* RIGHT SIDE */}
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "20px"
-          }}>
-
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "20px",
+            }}
+          >
             <div style={{ textAlign: "right" }}>
-              <div style={{
-                fontWeight: "800",
-                color: "#10b981",
-                fontSize: "18px"
-              }}>
+              <div
+                style={{
+                  fontWeight: "800",
+                  color: "#10b981",
+                  fontSize: "18px",
+                }}
+              >
                 + {Number(income.amount).toLocaleString()} ETB
               </div>
             </div>
 
             <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => onViewClick(income)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  color: "#475569",
+                  cursor: "pointer",
+                }}
+              >
+                View
+              </button>
 
               <button
                 onClick={() => onEditClick(income)}
@@ -152,7 +183,8 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
                   borderRadius: "6px",
                   border: "1px solid #e2e8f0",
                   background: "#fff",
-                  cursor: "pointer"
+                  color: "#2563eb",
+                  cursor: "pointer",
                 }}
               >
                 Edit
@@ -166,14 +198,12 @@ function IncomeList({ incomes, onDeleteIncome, onEditClick }) {
                   border: "1px solid #fee2e2",
                   background: "#fff",
                   color: "#dc2626",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Delete
               </button>
-
             </div>
-
           </div>
         </div>
       ))}
