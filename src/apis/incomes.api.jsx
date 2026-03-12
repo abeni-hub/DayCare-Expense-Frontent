@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:8000/api/income/';
+const API_BASE = 'https://selam-b.naatipharmacy.com/api/incomes/';
 
 export const getIncomes = async (url = null) => {
   const response = await axios.get(url || API_BASE);
