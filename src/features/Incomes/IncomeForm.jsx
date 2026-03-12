@@ -1,6 +1,124 @@
 import React, { useState, useEffect } from "react";
 import { createIncome, updateIncome } from "../../apis/incomes.api";
 
+// Extracted styles object for clean inline styling
+const styles = {
+  container: {
+    maxWidth: "896px",
+    margin: "0 auto",
+    backgroundColor: "#ffffff",
+    padding: "2rem",
+    borderRadius: "0.75rem",
+    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+    border: "1px solid #f3f4f6",
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    boxSizing: "border-box"
+  },
+  header: {
+    marginBottom: "1.5rem",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottom: "1px solid #e5e7eb",
+    paddingBottom: "1rem"
+  },
+  title: {
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    color: "#1f2937",
+    margin: 0
+  },
+  cancelButton: {
+    fontSize: "0.875rem",
+    color: "#6b7280",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    padding: 0
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1.5rem"
+  },
+  grid3: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "1.5rem"
+  },
+  grid2: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "1.5rem"
+  },
+  financialSection: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "1.5rem",
+    backgroundColor: "#f9fafb",
+    padding: "1rem",
+    borderRadius: "0.5rem",
+    border: "1px solid #f3f4f6"
+  },
+  combinedSection: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "1.5rem",
+    backgroundColor: "#eff6ff",
+    padding: "1rem",
+    borderRadius: "0.5rem",
+    border: "1px solid #dbeafe"
+  },
+  label: {
+    display: "block",
+    fontSize: "0.875rem",
+    fontWeight: "500",
+    color: "#374151",
+    marginBottom: "0.25rem"
+  },
+  input: {
+    width: "100%",
+    padding: "0.5rem 1rem",
+    marginTop: "0.25rem",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+    boxSizing: "border-box",
+    fontSize: "0.875rem",
+    backgroundColor: "#ffffff",
+    outline: "none"
+  },
+  textarea: {
+    width: "100%",
+    padding: "0.5rem 1rem",
+    marginTop: "0.25rem",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.375rem",
+    boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+    boxSizing: "border-box",
+    fontSize: "0.875rem",
+    resize: "none",
+    backgroundColor: "#ffffff",
+    outline: "none"
+  },
+  buttonContainer: {
+    paddingTop: "1rem",
+    display: "flex",
+    justifyContent: "flex-end"
+  },
+  submitButton: {
+    padding: "0.625rem 1.5rem",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    fontWeight: "500",
+    borderRadius: "0.5rem",
+    border: "none",
+    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+    cursor: "pointer",
+    fontSize: "0.875rem"
+  }
+};
+
 function IncomeForm({ onSubmit, editingIncome, clearEdit }) {
   const today = new Date().toISOString().split("T")[0];
 
@@ -102,41 +220,37 @@ function IncomeForm({ onSubmit, editingIncome, clearEdit }) {
     }
   };
 
-  // Shared Tailwind classes for inputs to keep code clean
-  const inputClass = "w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm";
-  const labelClass = "block text-sm font-medium text-gray-700";
-
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-      <div className="mb-6 flex justify-between items-center border-b pb-4">
-        <h3 className="text-2xl font-bold text-gray-800">
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h3 style={styles.title}>
           {editingIncome ? "Edit Transaction" : "New Transaction"}
         </h3>
         {editingIncome && (
           <button
             type="button"
             onClick={clearEdit}
-            className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+            style={styles.cancelButton}
           >
             Cancel Edit
           </button>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} style={styles.form}>
         {/* Section 1: Core Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div style={styles.grid3}>
           <div>
-            <label className={labelClass}>Transaction Type</label>
-            <select className={inputClass} value={transactionType} onChange={(e) => setTransactionType(e.target.value)}>
+            <label style={styles.label}>Transaction Type</label>
+            <select style={styles.input} value={transactionType} onChange={(e) => setTransactionType(e.target.value)}>
               <option value="income">Income</option>
               <option value="receivable">Receivable</option>
               <option value="liability">Liability</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>Category</label>
-            <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
+            <label style={styles.label}>Category</label>
+            <select style={styles.input} value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="tuition_fee">Child Tuition Fee</option>
               <option value="registration_fee">Registration Fee</option>
               <option value="late_fee">Late Payment Fee</option>
@@ -149,36 +263,36 @@ function IncomeForm({ onSubmit, editingIncome, clearEdit }) {
             </select>
           </div>
           <div>
-            <label className={labelClass}>Transaction Date</label>
-            <input type="date" className={inputClass} value={date} onChange={(e) => setDate(e.target.value)} required />
+            <label style={styles.label}>Transaction Date</label>
+            <input type="date" style={styles.input} value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
         </div>
 
         {/* Section 2: Payer & Description */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div style={styles.grid2}>
           <div>
-            <label className={labelClass}>Payer / Customer</label>
-            <input type="text" className={inputClass} placeholder="e.g. John Doe" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
+            <label style={styles.label}>Payer / Customer</label>
+            <input type="text" style={styles.input} placeholder="e.g. John Doe" value={payerName} onChange={(e) => setPayerName(e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Description</label>
-            <input type="text" className={inputClass} placeholder="Brief description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label style={styles.label}>Description</label>
+            <input type="text" style={styles.input} placeholder="Brief description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
         </div>
 
         {/* Section 3: Financials */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
+        <div style={styles.financialSection}>
           <div>
-            <label className={labelClass}>Total Amount</label>
-            <input type="number" step="0.01" className={inputClass} placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+            <label style={styles.label}>Total Amount</label>
+            <input type="number" step="0.01" style={styles.input} placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} required />
           </div>
           <div>
-            <label className={labelClass}>Amount Paid</label>
-            <input type="number" step="0.01" className={inputClass} placeholder="0.00" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} required />
+            <label style={styles.label}>Amount Paid</label>
+            <input type="number" step="0.01" style={styles.input} placeholder="0.00" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} required />
           </div>
           <div>
-            <label className={labelClass}>Payment Source</label>
-            <select className={inputClass} value={paymentSource} onChange={(e) => setPaymentSource(e.target.value)}>
+            <label style={styles.label}>Payment Source</label>
+            <select style={styles.input} value={paymentSource} onChange={(e) => setPaymentSource(e.target.value)}>
               <option value="cash">Cash</option>
               <option value="bank">Bank</option>
               <option value="combined">Combined</option>
@@ -188,41 +302,38 @@ function IncomeForm({ onSubmit, editingIncome, clearEdit }) {
 
         {/* Conditional Combined Payment Fields */}
         {paymentSource === "combined" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <div style={styles.combinedSection}>
             <div>
-              <label className={labelClass}>Cash Amount</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="0.00" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+              <label style={styles.label}>Cash Amount</label>
+              <input type="number" step="0.01" style={styles.input} placeholder="0.00" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
             </div>
             <div>
-              <label className={labelClass}>Bank Amount</label>
-              <input type="number" step="0.01" className={inputClass} placeholder="0.00" value={bankAmount} onChange={(e) => setBankAmount(e.target.value)} />
+              <label style={styles.label}>Bank Amount</label>
+              <input type="number" step="0.01" style={styles.input} placeholder="0.00" value={bankAmount} onChange={(e) => setBankAmount(e.target.value)} />
             </div>
           </div>
         )}
 
         {/* Section 4: Metadata */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div style={styles.grid2}>
           <div>
-            <label className={labelClass}>Due Date</label>
-            <input type="date" className={inputClass} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <label style={styles.label}>Due Date</label>
+            <input type="date" style={styles.input} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Reference Number</label>
-            <input type="text" className={inputClass} placeholder="e.g. INV-10293" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} />
+            <label style={styles.label}>Reference Number</label>
+            <input type="text" style={styles.input} placeholder="e.g. INV-10293" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} />
           </div>
         </div>
 
         <div>
-          <label className={labelClass}>Remarks</label>
-          <textarea className={`${inputClass} resize-none`} rows="3" placeholder="Any additional notes..." value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+          <label style={styles.label}>Remarks</label>
+          <textarea style={styles.textarea} rows="3" placeholder="Any additional notes..." value={remarks} onChange={(e) => setRemarks(e.target.value)} />
         </div>
 
         {/* Submit Button */}
-        <div className="pt-4 flex justify-end">
-          <button
-            type="submit"
-            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-          >
+        <div style={styles.buttonContainer}>
+          <button type="submit" style={styles.submitButton}>
             {editingIncome ? "Update Transaction" : "Save Transaction"}
           </button>
         </div>
