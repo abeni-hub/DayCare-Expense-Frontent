@@ -1,23 +1,20 @@
-import axios from 'axios';
-
-const API_BASE = 'https://selam-b.naatipharmacy.com/api/incomes/';
+import axios from "./axios";
 
 export const getIncomes = async (url = null) => {
-  const response = await axios.get(url || API_BASE);
+  const response = await axios.get(url || "incomes/");
   return response.data;
 };
 
 export const createIncome = async (data) => {
-  const response = await axios.post(API_BASE, data);
+  const response = await axios.post("incomes/", data);
   return response.data;
 };
 
 export const updateIncome = async (id, data) => {
-  const response = await axios.put(`${API_BASE}${id}/`, data);
+  const response = await axios.put(`incomes/${id}/`, data);
   return response.data;
 };
 
 export const deleteIncome = async (id) => {
-  await axios.delete(`${API_BASE}${id}/`);
-  return id;
+  await axios.delete(`incomes/${id}/`);
 };

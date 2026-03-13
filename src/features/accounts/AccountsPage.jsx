@@ -10,13 +10,25 @@ function AccountsPage() {
     fetchAccounts();
   }, []);
 
+  // Normalize API response (handles DRF pagination)
+  const normalizeResponse = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (data.results) return data.results;
+    return [];
+  };
+
   const fetchAccounts = async () => {
     try {
       const data = await getAccounts();
-      console.log("API Response:", data); // IMPORTANT: check this
-      setAccounts(data);
+      console.log("API Response:", data);
+
+      const accountList = normalizeResponse(data);
+      setAccounts(accountList);
+
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -27,7 +39,7 @@ function AccountsPage() {
   if (!accounts || accounts.length === 0)
     return <p>No accounts found.</p>;
 
-  // 🔎 Extract specific accounts safely
+  // Extract accounts safely
   const cashAccount = accounts.find(
     (acc) => acc.account_type === "cash"
   );
@@ -36,10 +48,10 @@ function AccountsPage() {
     (acc) => acc.account_type === "bank"
   );
 
-  // 💡 Compute combined safely
+  // Compute combined balance
   const combinedBalance =
-    (Number(cashAccount?.balance || 0)) +
-    (Number(bankAccount?.balance || 0));
+    Number(cashAccount?.balance || 0) +
+    Number(bankAccount?.balance || 0);
 
   const combinedAccount = {
     id: "combined",
@@ -72,7 +84,7 @@ function AccountsPage() {
           gap: "20px",
         }}
       >
-        {/* Combined Always First */}
+        {/* Combined Account */}
         <AccountSummary
           key="combined"
           account={combinedAccount}
@@ -86,7 +98,7 @@ function AccountsPage() {
             account={{
               id: bankAccount.id,
               name: bankAccount.name || "Bank",
-              balance: Number(bankAccount.balance),
+              balance: Number(bankAccount.balance || 0),
             }}
             isCombined={false}
           />
@@ -99,7 +111,7 @@ function AccountsPage() {
             account={{
               id: cashAccount.id,
               name: cashAccount.name || "Cash",
-              balance: Number(cashAccount.balance),
+              balance: Number(cashAccount.balance || 0),
             }}
             isCombined={false}
           />
@@ -110,6 +122,3 @@ function AccountsPage() {
 }
 
 export default AccountsPage;
-
-
-// Accounts Page
