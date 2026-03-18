@@ -96,7 +96,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         vat_rate: Number(item.vat_rate) // Ensure this is expected by DRF if you have VAT per item
       }));
 
-      // ✅ CHANGED: Send as 'items' so DRF connects it to the serializer field
+      // ✅ Send as 'items' so DRF connects it to the serializer field
       formData.append("items", JSON.stringify(processedItems));
 
       if (paymentSource === "combined") {
@@ -111,8 +111,14 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       if (onSubmit) onSubmit(res);
       if (clearEdit) clearEdit();
     } catch (err) {
-      console.error(err);
-      alert("Error submitting expense. Check console for details.");
+      // 🚨 THIS WILL REVEAL THE EXACT DJANGO ERROR IN YOUR CONSOLE
+      if (err.response && err.response.data) {
+        console.error("🛑 DJANGO VALIDATION ERROR:", err.response.data);
+        alert("Validation Error. Check console for details: " + JSON.stringify(err.response.data));
+      } else {
+        console.error("🛑 NETWORK/AXIOS ERROR:", err);
+        alert("Error submitting expense: " + err.message);
+      }
     }
   };
 
