@@ -93,9 +93,11 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         quantity: Number(item.quantity),
         unit: item.unit,
         unit_price: Number(item.unit_price),
-        vat_rate: Number(item.vat_rate)
+        vat_rate: Number(item.vat_rate) // Ensure this is expected by DRF if you have VAT per item
       }));
-      formData.append("items_input", JSON.stringify(processedItems));
+
+      // ✅ CHANGED: Send as 'items' so DRF connects it to the serializer field
+      formData.append("items", JSON.stringify(processedItems));
 
       if (paymentSource === "combined") {
         formData.append("cash_amount", cashAmount);
@@ -109,7 +111,8 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
       if (onSubmit) onSubmit(res);
       if (clearEdit) clearEdit();
     } catch (err) {
-      alert("Error submitting expense.");
+      console.error(err);
+      alert("Error submitting expense. Check console for details.");
     }
   };
 
@@ -164,11 +167,11 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
             {items.map(item => (
                 <div key={item.id} style={styles.tableBodyRow}>
-                    <div style={{ flex: 2.5 }}><input style={styles.tableInput} placeholder="Item description" value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} /></div>
-                    <div style={{ flex: 1 }}><input type="number" style={styles.tableInput} value={item.quantity} onChange={e => handleItemChange(item.id, "quantity", e.target.value)} /></div>
+                    <div style={{ flex: 2.5 }}><input style={styles.tableInput} placeholder="Item description" value={item.item_name} onChange={e => handleItemChange(item.id, "item_name", e.target.value)} required/></div>
+                    <div style={{ flex: 1 }}><input type="number" style={styles.tableInput} value={item.quantity} onChange={e => handleItemChange(item.id, "quantity", e.target.value)} required/></div>
                     <div style={{ flex: 1 }}><input style={styles.tableInput} value={item.unit} onChange={e => handleItemChange(item.id, "unit", e.target.value)} /></div>
-                    <div style={{ flex: 1.5 }}><input type="number" style={styles.tableInput} placeholder="0.00" value={item.unit_price} onChange={e => handleItemChange(item.id, "unit_price", e.target.value)} /></div>
-                    <div style={{ flex: 1 }}><input type="number" style={styles.tableInput} value={item.vat_rate} onChange={e => handleItemChange(item.id, "vat_rate", e.target.value)} /></div>
+                    <div style={{ flex: 1.5 }}><input type="number" step="any" style={styles.tableInput} placeholder="0.00" value={item.unit_price} onChange={e => handleItemChange(item.id, "unit_price", e.target.value)} required/></div>
+                    <div style={{ flex: 1 }}><input type="number" step="any" style={styles.tableInput} value={item.vat_rate} onChange={e => handleItemChange(item.id, "vat_rate", e.target.value)} /></div>
                     <div style={styles.totalCell}>{calculateRowTotal(item).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
                     <div style={{ width: 40, textAlign: 'right' }}>
                         <button type="button" style={styles.deleteRowBtn} onClick={() => removeItem(item.id)}>🗑️</button>
@@ -205,8 +208,8 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
 
                 {paymentSource === "combined" && (
                     <div style={styles.splitInputRow}>
-                        <Input label="Cash Portion" type="number" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value))} />
-                        <Input label="Bank Portion" type="number" value={bankAmount} onChange={e => setBankAmount(Number(e.target.value))} />
+                        <Input label="Cash Portion" type="number" step="any" value={cashAmount} onChange={e => setCashAmount(Number(e.target.value))} />
+                        <Input label="Bank Portion" type="number" step="any" value={bankAmount} onChange={e => setBankAmount(Number(e.target.value))} />
                     </div>
                 )}
             </div>
@@ -272,261 +275,38 @@ const Select = ({ label, children, ...props }) => (
 
 /* ---------- PROFESSIONAL UI STYLES ---------- */
 const styles = {
-  formContainer: {
-    padding: "20px 0",
-    maxWidth: "1150px",
-    margin: "0 auto",
-  },
-  modernCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: "20px",
-    padding: "40px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
-    border: "1px solid #f1f5f9"
-  },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "40px",
-    borderBottom: "1px solid #f1f5f9",
-    paddingBottom: "20px"
-  },
-  titleText: {
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "#0f172a",
-    margin: 0
-  },
-  statusBadge: {
-    backgroundColor: "#f8fafc",
-    color: "#64748b",
-    padding: "6px 14px",
-    borderRadius: "100px",
-    fontSize: "12px",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    border: "1px solid #e2e8f0"
-  },
-  sectionHeader: {
-    fontSize: "15px",
-    fontWeight: "700",
-    color: "#475569",
-    marginBottom: "20px",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    letterSpacing: "0.5px"
-  },
-  sectionIcon: {
-    backgroundColor: "#f1f5f9",
-    padding: "6px",
-    borderRadius: "8px",
-    fontSize: "14px"
-  },
-  gridContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: "24px",
-    marginBottom: "35px"
-  },
-  inputGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px"
-  },
-  fieldLabel: {
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "#64748b",
-    marginLeft: "2px"
-  },
-  formInput: {
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid #e2e8f0",
-    fontSize: "14px",
-    outline: "none",
-    transition: "border 0.2s ease",
-    backgroundColor: "#fcfcfd"
-  },
-  formSelect: {
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid #e2e8f0",
-    fontSize: "14px",
-    width: "100%",
-    backgroundColor: "#fcfcfd",
-    appearance: "none",
-    outline: "none"
-  },
-  tableWrapper: {
-    backgroundColor: "#f8fafc",
-    borderRadius: "16px",
-    padding: "20px",
-    border: "1px solid #f1f5f9",
-    marginBottom: "15px"
-  },
-  tableHeaderRow: {
-    display: "flex",
-    gap: "15px",
-    padding: "0 10px 15px 10px",
-    fontSize: "12px",
-    fontWeight: "700",
-    color: "#94a3b8",
-    textTransform: "uppercase"
-  },
-  tableBodyRow: {
-    display: "flex",
-    gap: "15px",
-    padding: "10px",
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    marginBottom: "10px",
-    alignItems: "center",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-  },
-  tableInput: {
-    width: "100%",
-    padding: "8px 12px",
-    border: "none",
-    fontSize: "14px",
-    outline: "none",
-    backgroundColor: "transparent"
-  },
-  totalCell: {
-    flex: 1.5,
-    textAlign: "right",
-    fontWeight: "700",
-    color: "#1e293b"
-  },
-  deleteRowBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    opacity: "0.5",
-    transition: "opacity 0.2s"
-  },
-  addRowBtn: {
-    padding: "10px 20px",
-    backgroundColor: "#ffffff",
-    color: "#2563eb",
-    border: "1px dashed #2563eb",
-    borderRadius: "12px",
-    fontWeight: "600",
-    fontSize: "14px",
-    cursor: "pointer",
-    marginBottom: "40px"
-  },
-  summarySection: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "40px",
-    padding: "30px",
-    backgroundColor: "#f1f5f9",
-    borderRadius: "20px",
-    marginBottom: "35px"
-  },
-  paymentCol: {
-    flex: 1
-  },
-  sectionHeaderSmall: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "#64748b",
-    marginBottom: "15px",
-    textTransform: "uppercase"
-  },
-  paymentButtonGroup: {
-    display: "flex",
-    gap: "12px"
-  },
-  methodCard: {
-    flex: 1,
-    padding: "16px",
-    borderRadius: "14px",
-    border: "2px solid",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "14px",
-    fontWeight: "700",
-    transition: "all 0.2s"
-  },
-  splitInputRow: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "15px",
-    marginTop: "20px"
-  },
-  grandTotalContainer: {
-    textAlign: "right",
-    paddingLeft: "40px",
-    borderLeft: "2px solid #e2e8f0"
-  },
-  totalLabel: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "#64748b",
-    marginBottom: "5px"
-  },
-  totalValue: {
-    fontSize: "36px",
-    fontWeight: "900",
-    color: "#0f172a"
-  },
-  totalDivider: {
-    height: "1px",
-    backgroundColor: "#cbd5e1",
-    margin: "10px 0 10px auto",
-    width: "150px"
-  },
-  textArea: {
-    width: "100%",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid #e2e8f0",
-    minHeight: "80px",
-    fontSize: "14px",
-    outline: "none",
-    backgroundColor: "#fcfcfd"
-  },
-  fileUploadBox: {
-    padding: "12px",
-    border: "2px dashed #e2e8f0",
-    borderRadius: "12px",
-    backgroundColor: "#f8fafc"
-  },
-  actionFooter: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "15px",
-    marginTop: "20px",
-    borderTop: "1px solid #f1f5f9",
-    paddingTop: "30px"
-  },
-  primaryBtn: {
-    backgroundColor: "#0f172a",
-    color: "#fff",
-    padding: "14px 28px",
-    border: "none",
-    borderRadius: "12px",
-    fontWeight: "700",
-    fontSize: "15px",
-    cursor: "pointer",
-    boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
-  },
-  secondaryBtn: {
-    backgroundColor: "#f1f5f9",
-    color: "#475569",
-    padding: "14px 28px",
-    border: "none",
-    borderRadius: "12px",
-    fontWeight: "700",
-    fontSize: "15px",
-    cursor: "pointer"
-  }
+  formContainer: { padding: "20px 0", maxWidth: "1150px", margin: "0 auto" },
+  modernCard: { backgroundColor: "#ffffff", borderRadius: "20px", padding: "40px", boxShadow: "0 10px 30px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9" },
+  headerRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" },
+  titleText: { fontSize: "24px", fontWeight: "800", color: "#0f172a", margin: 0 },
+  statusBadge: { backgroundColor: "#f8fafc", color: "#64748b", padding: "6px 14px", borderRadius: "100px", fontSize: "12px", fontWeight: "700", textTransform: "uppercase", border: "1px solid #e2e8f0" },
+  sectionHeader: { fontSize: "15px", fontWeight: "700", color: "#475569", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px", letterSpacing: "0.5px" },
+  sectionIcon: { backgroundColor: "#f1f5f9", padding: "6px", borderRadius: "8px", fontSize: "14px" },
+  gridContainer: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px", marginBottom: "35px" },
+  inputGroup: { display: "flex", flexDirection: "column", gap: "8px" },
+  fieldLabel: { fontSize: "13px", fontWeight: "600", color: "#64748b", marginLeft: "2px" },
+  formInput: { padding: "12px 16px", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "14px", outline: "none", transition: "border 0.2s ease", backgroundColor: "#fcfcfd" },
+  formSelect: { padding: "12px 16px", borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: "14px", width: "100%", backgroundColor: "#fcfcfd", appearance: "none", outline: "none" },
+  tableWrapper: { backgroundColor: "#f8fafc", borderRadius: "16px", padding: "20px", border: "1px solid #f1f5f9", marginBottom: "15px" },
+  tableHeaderRow: { display: "flex", gap: "15px", padding: "0 10px 15px 10px", fontSize: "12px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase" },
+  tableBodyRow: { display: "flex", gap: "15px", padding: "10px", backgroundColor: "#ffffff", borderRadius: "12px", marginBottom: "10px", alignItems: "center", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" },
+  tableInput: { width: "100%", padding: "8px 12px", border: "none", fontSize: "14px", outline: "none", backgroundColor: "transparent" },
+  totalCell: { flex: 1.5, textAlign: "right", fontWeight: "700", color: "#1e293b" },
+  deleteRowBtn: { background: "none", border: "none", cursor: "pointer", opacity: "0.5", transition: "opacity 0.2s" },
+  addRowBtn: { padding: "10px 20px", backgroundColor: "#ffffff", color: "#2563eb", border: "1px dashed #2563eb", borderRadius: "12px", fontWeight: "600", fontSize: "14px", cursor: "pointer", marginBottom: "40px" },
+  summarySection: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "40px", padding: "30px", backgroundColor: "#f1f5f9", borderRadius: "20px", marginBottom: "35px" },
+  paymentCol: { flex: 1 },
+  sectionHeaderSmall: { fontSize: "13px", fontWeight: "700", color: "#64748b", marginBottom: "15px", textTransform: "uppercase" },
+  paymentButtonGroup: { display: "flex", gap: "12px" },
+  methodCard: { flex: 1, padding: "16px", borderRadius: "14px", border: "2px solid", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "700", transition: "all 0.2s" },
+  splitInputRow: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginTop: "20px" },
+  grandTotalContainer: { textAlign: "right", paddingLeft: "40px", borderLeft: "2px solid #e2e8f0" },
+  totalLabel: { fontSize: "13px", fontWeight: "700", color: "#64748b", marginBottom: "5px" },
+  totalValue: { fontSize: "36px", fontWeight: "900", color: "#0f172a" },
+  totalDivider: { height: "1px", backgroundColor: "#cbd5e1", margin: "10px 0 10px auto", width: "150px" },
+  textArea: { width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid #e2e8f0", minHeight: "80px", fontSize: "14px", outline: "none", backgroundColor: "#fcfcfd" },
+  fileUploadBox: { padding: "12px", border: "2px dashed #e2e8f0", borderRadius: "12px", backgroundColor: "#f8fafc" },
+  actionFooter: { display: "flex", justifyContent: "flex-end", gap: "15px", marginTop: "20px", borderTop: "1px solid #f1f5f9", paddingTop: "30px" },
+  primaryBtn: { backgroundColor: "#0f172a", color: "#fff", padding: "14px 28px", border: "none", borderRadius: "12px", fontWeight: "700", fontSize: "15px", cursor: "pointer", boxShadow: "0 10px 20px rgba(0,0,0,0.1)" },
+  secondaryBtn: { backgroundColor: "#f1f5f9", color: "#475569", padding: "14px 28px", border: "none", borderRadius: "12px", fontWeight: "700", fontSize: "15px", cursor: "pointer" }
 };

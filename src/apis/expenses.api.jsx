@@ -6,12 +6,9 @@ const API_URL = "https://selam-b.naatipharmacy.com/api";
 export const createExpense = async (formData) => {
   const response = await axios.post(
     `${API_URL}/expenses/`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
+    formData
+    // 🚨 DO NOT set {"Content-Type": "multipart/form-data"} here!
+    // Axios sets it automatically with the required boundary string.
   );
   return response.data;
 };
@@ -20,17 +17,13 @@ export const createExpense = async (formData) => {
 export const updateExpense = async (id, formData) => {
   const response = await axios.put(
     `${API_URL}/expenses/${id}/`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
+    formData
+    // 🚨 DO NOT set manual headers here either!
   );
   return response.data;
 };
 
-// ✅ DELETE  🔥 THIS WAS MISSING
+// ✅ DELETE
 export const deleteExpense = async (id) => {
   const response = await axios.delete(
     `${API_URL}/expenses/${id}/`
@@ -38,7 +31,7 @@ export const deleteExpense = async (id) => {
   return response.data;
 };
 
-// ✅ GET ALL (optional but recommended)
+// ✅ GET ALL
 export const getExpenses = async () => {
   const response = await axios.get(
     `${API_URL}/expenses/`
