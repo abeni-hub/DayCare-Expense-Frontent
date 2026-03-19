@@ -93,7 +93,7 @@ export default function ExpenseForm({ onSubmit, editingExpense, clearEdit }) {
         quantity: Number(item.quantity),
         unit: item.unit,
         unit_price: Number(item.unit_price),
-        vat_rate: Number(item.vat_rate) // Ensure this is expected by DRF if you have VAT per item
+        vat_rate: Number(item.vat_rate || 0)// Ensure this is expected by DRF if you have VAT per item
       }));
 
       // ✅ Send as 'items' so DRF connects it to the serializer field
